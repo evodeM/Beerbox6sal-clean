@@ -16,7 +16,7 @@ import {
 import SettingsIcon from '@mui/icons-material/Settings';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
-import { getTotalSales, getProducts, updateProduct, resetAllBalances } from '../../firebase/services';
+import { getTotalSales, getProducts, updateProduct, resetAllBalances, getAdminConfig, updateAdminConfig } from '../../firebase/services';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ const AdminPanel = () => {
   const [products, setProducts] = useState([]);
   const [notification, setNotification] = useState('');
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [mobilePayNumber, setMobilePayNumber] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,17 +33,28 @@ const AdminPanel = () => {
       
       const productsData = await getProducts();
       setProducts(productsData);
+
+      const adminConfig = await getAdminConfig();
+      setMobilePayNumber(adminConfig.mobilePayPhoneNumber || '');
     };
     fetchData();
   }, []);
 
-  const handleProductPriceChange = async (productName, newPrice) => {
+  const handleProductUpdate = async (productId, updates) => {
     try {
-      await updateProduct(productName, { price: Number(newPrice) });
+      await updateProduct(productId, updates);
       const updatedProducts = await getProducts();
       setProducts(updatedProducts);
     } catch (error) {
-      console.error('Error updating product price:', error);
+      console.error('Error updating product:', error);
+    }
+  };
+
+  const handleMobilePayUpdate = async () => {
+    try {
+      await updateAdminConfig({ mobilePayPhoneNumber: mobilePayNumber });
+    } catch (error) {
+      console.error('Error updating MobilePay number:', error);
     }
   };
 
@@ -119,6 +131,58 @@ const AdminPanel = () => {
           </Typography>
         </Paper>
 
+        {/* MobilePay Settings */}
+        <Paper 
+          elevation={3}
+          sx={{ 
+            p: 3, 
+            mb: 4,
+            borderRadius: 3
+          }}
+        >
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              mb: 3,
+              color: '#2c3e50',
+              fontWeight: 'bold'
+            }}
+          >
+            MobilePay Indstillinger
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <TextField
+              fullWidth
+              label="MobilePay Nummer"
+              value={mobilePayNumber}
+              onChange={(e) => setMobilePayNumber(e.target.value)}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  bgcolor: '#fff',
+                  '&:hover fieldset': {
+                    borderColor: '#3498db',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#3498db',
+                  },
+                }
+              }}
+            />
+            <Button 
+              variant="contained"
+              onClick={handleMobilePayUpdate}
+              sx={{
+                bgcolor: '#e74c3c',
+                '&:hover': {
+                  bgcolor: '#c0392b',
+                }
+              }}
+            >
+              Gem
+            </Button>
+          </Box>
+        </Paper>
+
         {/* Edit Products */}
         <Paper 
           elevation={3}
@@ -136,38 +200,67 @@ const AdminPanel = () => {
               fontWeight: 'bold'
             }}
           >
-            Edit Products
+            Rediger Produkter
           </Typography>
           <Grid container spacing={3}>
             {products.map((product) => (
-              <Grid item xs={12} sm={6} key={product.name}>
-                <Typography 
-                  variant="subtitle1" 
-                  sx={{ 
-                    mb: 1,
-                    color: '#666',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  {product.name}
-                </Typography>
-                <TextField
-                  fullWidth
-                  type="number"
-                  value={product.price}
-                  onChange={(e) => handleProductPriceChange(product.name, e.target.value)}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      bgcolor: '#fff',
-                      '&:hover fieldset': {
-                        borderColor: '#3498db',
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#3498db',
-                      },
-                    }
-                  }}
-                />
+              <Grid item xs={12} sm={6} key={product.id}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography 
+                    variant="subtitle1" 
+                    sx={{ 
+                      mb: 1,
+                      color: '#666',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Produkt Navn
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    value={product.name}
+                    onChange={(e) => handleProductUpdate(product.id, { name: e.target.value })}
+                    sx={{
+                      mb: 2,
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: '#fff',
+                        '&:hover fieldset': {
+                          borderColor: '#3498db',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#3498db',
+                        },
+                      }
+                    }}
+                  />
+                  <Typography 
+                    variant="subtitle1" 
+                    sx={{ 
+                      mb: 1,
+                      color: '#666',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Pris (DKK)
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    value={product.price}
+                    onChange={(e) => handleProductUpdate(product.id, { price: Number(e.target.value) })}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        bgcolor: '#fff',
+                        '&:hover fieldset': {
+                          borderColor: '#3498db',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#3498db',
+                        },
+                      }
+                    }}
+                  />
+                </Box>
               </Grid>
             ))}
           </Grid>
@@ -192,7 +285,7 @@ const AdminPanel = () => {
                   fontWeight: 'bold'
                 }}
               >
-                Generate Monthly Report
+                Generer Månedlig Rapport
               </Typography>
               <Button 
                 variant="contained"
@@ -204,7 +297,7 @@ const AdminPanel = () => {
                   }
                 }}
               >
-                Export CSV
+                Eksporter CSV
               </Button>
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -216,7 +309,7 @@ const AdminPanel = () => {
                   fontWeight: 'bold'
                 }}
               >
-                Reset Balances
+                Nulstil Saldi
               </Typography>
               <Button 
                 variant="contained"
@@ -229,7 +322,7 @@ const AdminPanel = () => {
                   }
                 }}
               >
-                Confirm
+                Bekræft
               </Button>
             </Grid>
           </Grid>
@@ -251,13 +344,13 @@ const AdminPanel = () => {
               fontWeight: 'bold'
             }}
           >
-            Send Notification
+            Send Notifikation
           </Typography>
           <TextField
             fullWidth
             multiline
             rows={3}
-            placeholder="Enter your message here..."
+            placeholder="Skriv din besked her..."
             value={notification}
             onChange={(e) => setNotification(e.target.value)}
             sx={{
@@ -304,11 +397,11 @@ const AdminPanel = () => {
           color: '#2c3e50',
           fontWeight: 'bold'
         }}>
-          Confirm Reset
+          Bekræft Nulstilling
         </DialogTitle>
         <DialogContent>
           <Typography color="text.secondary">
-            Are you sure you want to reset all balances? This action cannot be undone.
+            Er du sikker på at du vil nulstille alle saldi? Denne handling kan ikke fortrydes.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -316,7 +409,7 @@ const AdminPanel = () => {
             onClick={() => setConfirmDialogOpen(false)}
             sx={{ color: '#666' }}
           >
-            Cancel
+            Annuller
           </Button>
           <Button 
             onClick={handleResetBalances} 
@@ -328,7 +421,7 @@ const AdminPanel = () => {
               }
             }}
           >
-            Reset
+            Nulstil
           </Button>
         </DialogActions>
       </Dialog>

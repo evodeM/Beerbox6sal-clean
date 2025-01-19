@@ -77,18 +77,29 @@ export const addPurchase = async ({ roomId, productName, amount }) => {
   });
 };
 
-// Admin Operations
+// Admin Config
 export const getAdminConfig = async () => {
-  const configRef = doc(db, 'adminConfig', 'general');
-  const configDoc = await getDoc(configRef);
-  return configDoc.exists() ? configDoc.data() : null;
+  try {
+    const docRef = doc(db, 'adminConfig', 'general');
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? docSnap.data() : {};
+  } catch (error) {
+    console.error('Error getting admin config:', error);
+    return {};
+  }
 };
 
-export const updateAdminConfig = async (data) => {
-  const configRef = doc(db, 'adminConfig', 'general');
-  await updateDoc(configRef, data);
+export const updateAdminConfig = async (updates) => {
+  try {
+    const docRef = doc(db, 'adminConfig', 'general');
+    await setDoc(docRef, updates, { merge: true });
+  } catch (error) {
+    console.error('Error updating admin config:', error);
+    throw error;
+  }
 };
 
+// Admin Operations
 export const getTotalSales = async () => {
   const querySnapshot = await getDocs(collection(db, 'purchases'));
   return querySnapshot.docs.reduce((total, doc) => total + doc.data().amount, 0);
