@@ -7,7 +7,7 @@ import './App.css'
 
 const App = () => {
   return (
-    <Router basename="/dorm-sales-app">
+    <Router basename="/Beerbox6sal">
       <Routes>
         <Route path="/" element={<TabletLayout />}>
           <Route index element={<RoomGrid />} />
