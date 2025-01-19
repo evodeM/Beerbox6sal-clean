@@ -102,49 +102,35 @@ const RoomGrid = () => {
     );
   };
 
-  // Generate room numbers
-  const roomNumbers = Array.from({ length: 28 }, (_, i) => (601 + i).toString());
-
   return (
-    <Box sx={{ 
-      bgcolor: '#f5f6fa',
-      minHeight: '100vh', 
-      pt: 3, 
-      pb: 10 
-    }}>
-      <Typography 
-        variant="h4" 
-        component="h1" 
-        align="center" 
-        sx={{ 
-          color: '#2c3e50', 
-          mb: 4,
-          fontWeight: 'bold'
+    <Container 
+      maxWidth={false} 
+      sx={{ 
+        py: 2,
+        px: { xs: 1, sm: 2 },
+        height: '100vh',
+        overflow: 'auto',
+        backgroundColor: '#1a1a1a'
+      }}
+    >
+      <Grid 
+        container 
+        spacing={2}
+        sx={{
+          width: '100%',
+          margin: 0,
+          // Optimize for iPad (1024x768) and similar tablets
+          maxWidth: '1024px',
+          mx: 'auto'
         }}
       >
-        DormDrinks 6.sal
-        <Typography 
-          variant="subtitle1" 
-          component="div" 
-          sx={{ 
-            color: '#666',
-            mt: 1 
-          }}
-        >
-          Beer, Soda & Beyond
-        </Typography>
-      </Typography>
-
-      <Container maxWidth="lg">
-        <Grid container spacing={2}>
-          {roomNumbers.map((roomId) => (
-            <Grid item xs={12} sm={6} md={3} key={roomId}>
-              <RoomTile roomId={roomId} />
-            </Grid>
-          ))}
-        </Grid>
-      </Container>
-    </Box>
+        {Array.from({ length: 28 }, (_, i) => i + 601).map((roomId) => (
+          <Grid item xs={4} sm={3} key={roomId}>
+            <RoomTile roomId={roomId.toString()} />
+          </Grid>
+        ))}
+      </Grid>
+    </Container>
   );
 };
 
