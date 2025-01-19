@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { Grid, Paper, Typography, Box, Container } from '@mui/material';
+import { Grid, Paper, Typography, Box, Container, IconButton } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useFirestore } from '../../hooks/useFirestore';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 const RoomGrid = () => {
   const navigate = useNavigate();
@@ -110,16 +111,32 @@ const RoomGrid = () => {
         px: { xs: 1, sm: 2 },
         height: '100vh',
         overflow: 'auto',
-        backgroundColor: '#1a1a1a'
+        backgroundColor: '#1a1a1a',
+        position: 'relative'
       }}
     >
+      <IconButton
+        onClick={() => navigate('/admin')}
+        sx={{
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          color: '#fff',
+          opacity: 0.7,
+          '&:hover': {
+            opacity: 1
+          }
+        }}
+      >
+        <SettingsIcon />
+      </IconButton>
+      
       <Grid 
         container 
         spacing={2}
         sx={{
           width: '100%',
           margin: 0,
-          // Optimize for iPad (1024x768) and similar tablets
           maxWidth: '1024px',
           mx: 'auto'
         }}
