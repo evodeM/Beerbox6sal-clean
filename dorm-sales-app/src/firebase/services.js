@@ -8,6 +8,11 @@ import {
   updateDoc,
   addDoc,
   serverTimestamp,
+  query,
+  where,
+  orderBy,
+  runTransaction,
+  Timestamp,
 } from 'firebase/firestore';
 
 // Room Operations
@@ -18,14 +23,12 @@ export const getRooms = async () => {
 };
 
 export const getRoom = async (roomId) => {
-  const roomRef = doc(db, 'rooms', roomId);
-  const roomDoc = await getDoc(roomRef);
-  return roomDoc.exists() ? { id: roomDoc.id, ...roomDoc.data() } : null;
+  const roomDoc = await getDoc(doc(db, 'rooms', roomId));
+  return roomDoc.exists() ? roomDoc.data() : null;
 };
 
 export const updateRoom = async (roomId, data) => {
-  const roomRef = doc(db, 'rooms', roomId);
-  await updateDoc(roomRef, data);
+  await updateDoc(doc(db, 'rooms', roomId), data);
 };
 
 // Product Operations
@@ -36,33 +39,41 @@ export const getProducts = async () => {
 };
 
 export const updateProduct = async (productId, data) => {
-  const productRef = doc(db, 'products', productId);
-  await updateDoc(productRef, data);
+  await updateDoc(doc(db, 'products', productId), data);
 };
 
 // Purchase Operations
-export const addPurchase = async (purchaseData) => {
-  const purchasesRef = collection(db, 'purchases');
-  const purchase = {
-    ...purchaseData,
-    timestamp: serverTimestamp(),
-  };
+export const addPurchase = async ({ roomId, productName, amount }) => {
+  const timestamp = Timestamp.now();
   
-  // Add purchase record
-  await addDoc(purchasesRef, purchase);
-  
-  // Update room balance
-  const roomRef = doc(db, 'rooms', purchaseData.roomId);
-  const roomDoc = await getDoc(roomRef);
-  const currentBalance = roomDoc.data()?.balance || 0;
-  
-  await updateDoc(roomRef, {
-    balance: currentBalance + purchaseData.amount,
-    lastPurchase: {
-      productName: purchaseData.productName,
-      amount: purchaseData.amount,
-      timestamp: serverTimestamp(),
-    },
+  await runTransaction(db, async (transaction) => {
+    const roomRef = doc(db, 'rooms', roomId);
+    const roomDoc = await transaction.get(roomRef);
+
+    if (!roomDoc.exists()) {
+      throw new Error('Room does not exist!');
+    }
+
+    const newBalance = (roomDoc.data().balance || 0) + amount;
+    
+    transaction.update(roomRef, { 
+      balance: newBalance,
+      lastPurchase: {
+        productName,
+        amount,
+        timestamp
+      }
+    });
+
+    // Add purchase to history
+    const purchaseRef = collection(db, 'purchases');
+    transaction.set(doc(purchaseRef), {
+      roomId,
+      productName,
+      amount,
+      timestamp,
+      balanceAfter: newBalance
+    });
   });
 };
 
@@ -76,6 +87,34 @@ export const getAdminConfig = async () => {
 export const updateAdminConfig = async (data) => {
   const configRef = doc(db, 'adminConfig', 'general');
   await updateDoc(configRef, data);
+};
+
+export const getTotalSales = async () => {
+  const querySnapshot = await getDocs(collection(db, 'purchases'));
+  return querySnapshot.docs.reduce((total, doc) => total + doc.data().amount, 0);
+};
+
+export const resetAllBalances = async () => {
+  const roomsSnapshot = await getDocs(collection(db, 'rooms'));
+  
+  const batch = db.batch();
+  roomsSnapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, { balance: 0 });
+  });
+  
+  await batch.commit();
+};
+
+export const getPurchaseHistory = async (startDate, endDate) => {
+  const q = query(
+    collection(db, 'purchases'),
+    where('timestamp', '>=', startDate),
+    where('timestamp', '<=', endDate),
+    orderBy('timestamp', 'desc')
+  );
+  
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
 // FCM Token Operations
