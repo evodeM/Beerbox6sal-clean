@@ -109,10 +109,11 @@ const RoomGrid = () => {
       maxWidth={false} 
       sx={{ 
         py: 3,
-        px: { xs: 1, sm: 2 },
+        px: { xs: 2, sm: 3 },
         minHeight: '100vh',
         bgcolor: '#f5f6fa',
-        position: 'relative'
+        position: 'relative',
+        overflow: 'hidden'
       }}
     >
       <IconButton
@@ -160,14 +161,22 @@ const RoomGrid = () => {
         container 
         spacing={2}
         sx={{
-          width: '100%',
-          margin: 0,
-          maxWidth: '1024px',
-          mx: 'auto'
+          width: 'auto',
+          mx: -1,
+          mt: 0
         }}
       >
         {Array.from({ length: 28 }, (_, i) => i + 601).map((roomId) => (
-          <Grid item xs={4} sm={3} key={roomId}>
+          <Grid 
+            item 
+            xs={6}
+            sm={4}
+            md={3}
+            key={roomId}
+            sx={{
+              height: '100%'
+            }}
+          >
             <RoomTile roomId={roomId.toString()} />
           </Grid>
         ))}
