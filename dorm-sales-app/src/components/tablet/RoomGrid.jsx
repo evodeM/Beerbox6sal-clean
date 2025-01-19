@@ -32,18 +32,19 @@ const RoomGrid = () => {
       <Paper
         elevation={3}
         sx={{
-          p: 2,
-          height: '130px',
+          p: 3,
+          height: '100%',
           cursor: 'pointer',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          backgroundColor: room.balance > 0 ? '#fff3e0' : '#fff',
+          alignItems: 'center',
+          backgroundColor: '#fff',
           borderRadius: '12px',
-          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+          transition: 'all 0.2s ease-in-out',
           position: 'relative',
           '&:hover': {
-            transform: 'scale(1.02)',
+            transform: 'translateY(-4px)',
             boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
           },
         }}
@@ -65,38 +66,38 @@ const RoomGrid = () => {
         <Typography 
           variant="h4" 
           component="div" 
-          align="center" 
           sx={{ 
+            color: '#2c3e50',
             fontWeight: 'bold',
-            mb: 1,
-            color: '#2c3e50'
+            mb: 1
           }}
         >
           {roomId}
         </Typography>
         <Typography 
           variant="body1" 
-          align="center"
-          sx={{
+          sx={{ 
             color: '#666',
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            width: '100%',
+            px: 2
           }}
         >
-          {room.occupantName || ''}
+          {room.occupantName || 'Tomt værelse'}
         </Typography>
         {room.balance > 0 && (
           <Typography 
             variant="body1" 
-            align="center" 
             sx={{ 
               color: '#e74c3c',
               mt: 1,
               fontWeight: 'bold'
             }}
           >
-            {room.balance.toFixed(2)} kr
+            {room.balance} kr
           </Typography>
         )}
       </Paper>
@@ -107,11 +108,10 @@ const RoomGrid = () => {
     <Container 
       maxWidth={false} 
       sx={{ 
-        py: 2,
+        py: 3,
         px: { xs: 1, sm: 2 },
-        height: '100vh',
-        overflow: 'auto',
-        backgroundColor: '#1a1a1a',
+        minHeight: '100vh',
+        bgcolor: '#f5f6fa',
         position: 'relative'
       }}
     >
@@ -121,7 +121,7 @@ const RoomGrid = () => {
           position: 'absolute',
           top: 16,
           right: 16,
-          color: '#fff',
+          color: '#2c3e50',
           opacity: 0.7,
           '&:hover': {
             opacity: 1
@@ -130,6 +130,31 @@ const RoomGrid = () => {
       >
         <SettingsIcon />
       </IconButton>
+
+      <Typography 
+        variant="h3" 
+        component="h1" 
+        align="center" 
+        sx={{ 
+          color: '#2c3e50',
+          mb: 1,
+          fontWeight: 'bold'
+        }}
+      >
+        DormDrinks 6.sal
+      </Typography>
+      
+      <Typography 
+        variant="subtitle1" 
+        component="div" 
+        align="center"
+        sx={{ 
+          color: '#666',
+          mb: 4
+        }}
+      >
+        Beer, Soda & Beyond
+      </Typography>
       
       <Grid 
         container 
