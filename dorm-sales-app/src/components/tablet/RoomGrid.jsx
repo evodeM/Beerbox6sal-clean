@@ -5,11 +5,10 @@ import { useFirestore } from '../../hooks/useFirestore';
 
 const RoomGrid = () => {
   const navigate = useNavigate();
-  const { data: rooms, loading } = useFirestore('rooms');
+  const { data: rooms } = useFirestore('rooms');
 
   // Memoize room data to prevent unnecessary re-renders
   const roomsMap = useMemo(() => {
-    if (!rooms) return {};
     return rooms.reduce((acc, room) => {
       acc[room.id] = room;
       return acc;
@@ -33,13 +32,12 @@ const RoomGrid = () => {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
-          backgroundColor: '#2D2D2D',
-          color: 'white',
-          borderRadius: '16px',
-          transition: 'transform 0.2s ease-in-out, background-color 0.2s ease-in-out',
+          backgroundColor: room.balance > 0 ? '#fff3e0' : '#fff',
+          borderRadius: '12px',
+          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
           '&:hover': {
             transform: 'scale(1.02)',
-            backgroundColor: '#3D3D3D',
+            boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
           },
         }}
         onClick={() => handleRoomClick(roomId)}
@@ -51,28 +49,29 @@ const RoomGrid = () => {
           sx={{ 
             fontWeight: 'bold',
             mb: 1,
+            color: '#2c3e50'
           }}
         >
-          Room {roomId}
+          {roomId}
         </Typography>
         <Typography 
           variant="body1" 
           align="center"
           sx={{
-            color: '#CCCCCC',
+            color: '#666',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
           }}
         >
-          Occupant: {room.occupantName || '[Name]'}
+          {room.occupantName || ''}
         </Typography>
         {room.balance > 0 && (
           <Typography 
             variant="body1" 
             align="center" 
             sx={{ 
-              color: '#FF4444',
+              color: '#e74c3c',
               mt: 1,
               fontWeight: 'bold'
             }}
@@ -84,25 +83,12 @@ const RoomGrid = () => {
     );
   };
 
-  // Generate room numbers only once
-  const roomNumbers = useMemo(() => 
-    Array.from({ length: 28 }, (_, i) => (601 + i).toString()),
-    []
-  );
-
-  if (loading) {
-    return (
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Typography variant="h6" align="center" color="textSecondary">
-          Loading rooms...
-        </Typography>
-      </Container>
-    );
-  }
+  // Generate room numbers
+  const roomNumbers = Array.from({ length: 28 }, (_, i) => (601 + i).toString());
 
   return (
     <Box sx={{ 
-      bgcolor: '#1A1A1A', 
+      bgcolor: '#f5f6fa',
       minHeight: '100vh', 
       pt: 3, 
       pb: 10 
@@ -112,7 +98,7 @@ const RoomGrid = () => {
         component="h1" 
         align="center" 
         sx={{ 
-          color: 'white', 
+          color: '#2c3e50', 
           mb: 4,
           fontWeight: 'bold'
         }}
@@ -122,7 +108,7 @@ const RoomGrid = () => {
           variant="subtitle1" 
           component="div" 
           sx={{ 
-            color: '#CCCCCC',
+            color: '#666',
             mt: 1 
           }}
         >

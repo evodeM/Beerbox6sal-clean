@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   AppBar, 
   Toolbar, 
-  Typography, 
   IconButton, 
   Box,
   Dialog,
@@ -44,37 +43,23 @@ const TabletLayout = ({ children }) => {
       display: 'flex', 
       flexDirection: 'column', 
       minHeight: '100vh',
-      bgcolor: '#1A1A1A'
+      bgcolor: '#f5f6fa'
     }}>
       <AppBar 
         position="static" 
         sx={{ 
-          bgcolor: '#2D2D2D',
-          boxShadow: 'none',
-          borderBottom: '1px solid #333333'
+          bgcolor: 'white',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         }}
       >
-        <Toolbar>
-          <Typography 
-            variant="h6" 
-            component="div" 
-            sx={{ 
-              flexGrow: 1, 
-              cursor: 'pointer',
-              color: 'white',
-              fontWeight: 'bold'
-            }}
-            onClick={() => navigate('/')}
-          >
-            DormDrinks 6.sal
-          </Typography>
+        <Toolbar sx={{ justifyContent: 'flex-end' }}>
           <IconButton 
             onClick={() => setAdminDialogOpen(true)}
             size="large"
             sx={{ 
-              color: 'white',
+              color: '#666',
               '&:hover': {
-                color: '#FF4444'
+                color: '#e74c3c'
               }
             }}
           >
@@ -93,8 +78,8 @@ const TabletLayout = ({ children }) => {
         onClose={() => setAdminDialogOpen(false)}
         PaperProps={{
           sx: {
-            bgcolor: '#2D2D2D',
-            color: 'white'
+            bgcolor: 'white',
+            color: '#333'
           }
         }}
       >
@@ -118,21 +103,21 @@ const TabletLayout = ({ children }) => {
             }}
             sx={{
               '& .MuiOutlinedInput-root': {
-                color: 'white',
+                color: '#333',
                 '& fieldset': {
-                  borderColor: '#444444',
+                  borderColor: '#ccc',
                 },
                 '&:hover fieldset': {
-                  borderColor: '#666666',
+                  borderColor: '#aaa',
                 },
                 '&.Mui-focused fieldset': {
-                  borderColor: '#FF4444',
+                  borderColor: '#e74c3c',
                 },
               },
               '& .MuiInputLabel-root': {
-                color: '#CCCCCC',
+                color: '#666',
                 '&.Mui-focused': {
-                  color: '#FF4444',
+                  color: '#e74c3c',
                 },
               },
             }}
@@ -141,12 +126,7 @@ const TabletLayout = ({ children }) => {
         <DialogActions sx={{ p: 2 }}>
           <Button 
             onClick={() => setAdminDialogOpen(false)}
-            sx={{ 
-              color: '#CCCCCC',
-              '&:hover': {
-                color: 'white'
-              }
-            }}
+            sx={{ color: '#666' }}
           >
             Cancel
           </Button>
@@ -154,9 +134,9 @@ const TabletLayout = ({ children }) => {
             onClick={handleAdminAccess} 
             variant="contained"
             sx={{
-              bgcolor: '#FF4444',
+              bgcolor: '#e74c3c',
               '&:hover': {
-                bgcolor: '#FF6666'
+                bgcolor: '#c0392b'
               }
             }}
           >
