@@ -1,59 +1,81 @@
-import React from 'react';
-import { Grid, Paper, Typography, Box } from '@mui/material';
+import React, { useMemo } from 'react';
+import { Grid, Paper, Typography, Box, Container } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useFirestore } from '../../hooks/useFirestore';
 
 const RoomGrid = () => {
   const navigate = useNavigate();
-  const { data: rooms, loading, error } = useFirestore('rooms');
+  const { data: rooms, loading } = useFirestore('rooms');
 
-  // Create array of room numbers from 601 to 628
-  const roomNumbers = Array.from({ length: 28 }, (_, i) => (601 + i).toString());
+  // Memoize room data to prevent unnecessary re-renders
+  const roomsMap = useMemo(() => {
+    if (!rooms) return {};
+    return rooms.reduce((acc, room) => {
+      acc[room.id] = room;
+      return acc;
+    }, {});
+  }, [rooms]);
 
   const handleRoomClick = (roomId) => {
     navigate(`/room/${roomId}`);
   };
 
   const RoomTile = ({ roomId }) => {
-    const room = rooms?.find(r => r.id === roomId) || { occupantName: '', balance: 0 };
+    const room = roomsMap[roomId] || { occupantName: '', balance: 0 };
     
     return (
       <Paper
         elevation={3}
         sx={{
           p: 2,
-          height: '120px',
+          height: '130px',
           cursor: 'pointer',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          backgroundColor: room.balance > 0 ? '#fff3e0' : '#fff', // Light orange background if balance > 0
+          justifyContent: 'center',
+          backgroundColor: '#2D2D2D',
+          color: 'white',
+          borderRadius: '16px',
+          transition: 'transform 0.2s ease-in-out, background-color 0.2s ease-in-out',
           '&:hover': {
-            backgroundColor: '#e3f2fd',
+            transform: 'scale(1.02)',
+            backgroundColor: '#3D3D3D',
           },
         }}
         onClick={() => handleRoomClick(roomId)}
       >
-        <Typography variant="h4" component="div" align="center" sx={{ fontWeight: 'bold' }}>
-          {roomId}
-        </Typography>
         <Typography 
-          variant="body2" 
-          align="center"
-          sx={{
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
+          variant="h4" 
+          component="div" 
+          align="center" 
+          sx={{ 
+            fontWeight: 'bold',
+            mb: 1,
           }}
         >
-          {room.occupantName || 'Vacant'}
+          Room {roomId}
+        </Typography>
+        <Typography 
+          variant="body1" 
+          align="center"
+          sx={{
+            color: '#CCCCCC',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Occupant: {room.occupantName || '[Name]'}
         </Typography>
         {room.balance > 0 && (
           <Typography 
-            variant="body2" 
+            variant="body1" 
             align="center" 
-            color="error"
-            sx={{ fontWeight: 'bold' }}
+            sx={{ 
+              color: '#FF4444',
+              mt: 1,
+              fontWeight: 'bold'
+            }}
           >
             {room.balance.toFixed(2)} kr
           </Typography>
@@ -62,31 +84,61 @@ const RoomGrid = () => {
     );
   };
 
+  // Generate room numbers only once
+  const roomNumbers = useMemo(() => 
+    Array.from({ length: 28 }, (_, i) => (601 + i).toString()),
+    []
+  );
+
   if (loading) {
     return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography>Loading rooms...</Typography>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography color="error">Error: {error}</Typography>
-      </Box>
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Typography variant="h6" align="center" color="textSecondary">
+          Loading rooms...
+        </Typography>
+      </Container>
     );
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: '1200px', margin: '0 auto' }}>
-      <Grid container spacing={2}>
-        {roomNumbers.map((roomId) => (
-          <Grid item xs={6} sm={4} md={3} key={roomId}>
-            <RoomTile roomId={roomId} />
-          </Grid>
-        ))}
-      </Grid>
+    <Box sx={{ 
+      bgcolor: '#1A1A1A', 
+      minHeight: '100vh', 
+      pt: 3, 
+      pb: 10 
+    }}>
+      <Typography 
+        variant="h4" 
+        component="h1" 
+        align="center" 
+        sx={{ 
+          color: 'white', 
+          mb: 4,
+          fontWeight: 'bold'
+        }}
+      >
+        DormDrinks 6.sal
+        <Typography 
+          variant="subtitle1" 
+          component="div" 
+          sx={{ 
+            color: '#CCCCCC',
+            mt: 1 
+          }}
+        >
+          Beer, Soda & Beyond
+        </Typography>
+      </Typography>
+
+      <Container maxWidth="lg">
+        <Grid container spacing={2}>
+          {roomNumbers.map((roomId) => (
+            <Grid item xs={12} sm={6} md={3} key={roomId}>
+              <RoomTile roomId={roomId} />
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
     </Box>
   );
 };

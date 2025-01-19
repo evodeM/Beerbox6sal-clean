@@ -40,21 +40,43 @@ const TabletLayout = ({ children }) => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBar position="static" sx={{ backgroundColor: '#1976d2' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      minHeight: '100vh',
+      bgcolor: '#1A1A1A'
+    }}>
+      <AppBar 
+        position="static" 
+        sx={{ 
+          bgcolor: '#2D2D2D',
+          boxShadow: 'none',
+          borderBottom: '1px solid #333333'
+        }}
+      >
         <Toolbar>
           <Typography 
             variant="h6" 
             component="div" 
-            sx={{ flexGrow: 1, cursor: 'pointer' }}
+            sx={{ 
+              flexGrow: 1, 
+              cursor: 'pointer',
+              color: 'white',
+              fontWeight: 'bold'
+            }}
             onClick={() => navigate('/')}
           >
-            Dorm Sales
+            DormDrinks 6.sal
           </Typography>
           <IconButton 
-            color="inherit"
             onClick={() => setAdminDialogOpen(true)}
             size="large"
+            sx={{ 
+              color: 'white',
+              '&:hover': {
+                color: '#FF4444'
+              }
+            }}
           >
             <AdminPanelSettingsIcon />
           </IconButton>
@@ -66,7 +88,16 @@ const TabletLayout = ({ children }) => {
       </Box>
 
       {/* Admin Login Dialog */}
-      <Dialog open={adminDialogOpen} onClose={() => setAdminDialogOpen(false)}>
+      <Dialog 
+        open={adminDialogOpen} 
+        onClose={() => setAdminDialogOpen(false)}
+        PaperProps={{
+          sx: {
+            bgcolor: '#2D2D2D',
+            color: 'white'
+          }
+        }}
+      >
         <DialogTitle>Admin Access</DialogTitle>
         <DialogContent>
           <TextField
@@ -85,11 +116,50 @@ const TabletLayout = ({ children }) => {
                 handleAdminAccess();
               }
             }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                color: 'white',
+                '& fieldset': {
+                  borderColor: '#444444',
+                },
+                '&:hover fieldset': {
+                  borderColor: '#666666',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#FF4444',
+                },
+              },
+              '& .MuiInputLabel-root': {
+                color: '#CCCCCC',
+                '&.Mui-focused': {
+                  color: '#FF4444',
+                },
+              },
+            }}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAdminDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleAdminAccess} variant="contained">
+        <DialogActions sx={{ p: 2 }}>
+          <Button 
+            onClick={() => setAdminDialogOpen(false)}
+            sx={{ 
+              color: '#CCCCCC',
+              '&:hover': {
+                color: 'white'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleAdminAccess} 
+            variant="contained"
+            sx={{
+              bgcolor: '#FF4444',
+              '&:hover': {
+                bgcolor: '#FF6666'
+              }
+            }}
+          >
             Login
           </Button>
         </DialogActions>
