@@ -1,4 +1,4 @@
-import { db } from './config';
+import { db } from './config.js';
 import {
   collection,
   doc,
@@ -8,11 +8,6 @@ import {
   updateDoc,
   addDoc,
   serverTimestamp,
-  query,
-  where,
-  orderBy,
-  runTransaction,
-  Timestamp,
 } from 'firebase/firestore';
 
 // Room Operations
@@ -23,12 +18,14 @@ export const getRooms = async () => {
 };
 
 export const getRoom = async (roomId) => {
-  const roomDoc = await getDoc(doc(db, 'rooms', roomId));
-  return roomDoc.exists() ? roomDoc.data() : null;
+  const roomRef = doc(db, 'rooms', roomId);
+  const roomDoc = await getDoc(roomRef);
+  return roomDoc.exists() ? { id: roomDoc.id, ...roomDoc.data() } : null;
 };
 
 export const updateRoom = async (roomId, data) => {
-  await updateDoc(doc(db, 'rooms', roomId), data);
+  const roomRef = doc(db, 'rooms', roomId);
+  await updateDoc(roomRef, data);
 };
 
 // Product Operations
@@ -39,41 +36,37 @@ export const getProducts = async () => {
 };
 
 export const updateProduct = async (productId, data) => {
-  await updateDoc(doc(db, 'products', productId), data);
+  const productRef = doc(db, 'products', productId);
+  await updateDoc(productRef, data);
 };
 
 // Purchase Operations
-export const addPurchase = async ({ roomId, productName, amount }) => {
-  const timestamp = Timestamp.now();
+export const addPurchase = async ({ roomId, productId, productName, amount }) => {
+  const purchasesRef = collection(db, 'purchases');
+  const purchase = {
+    roomId,
+    productId,
+    productName,
+    amount,
+    timestamp: serverTimestamp(),
+  };
   
-  await runTransaction(db, async (transaction) => {
-    const roomRef = doc(db, 'rooms', roomId);
-    const roomDoc = await transaction.get(roomRef);
-
-    if (!roomDoc.exists()) {
-      throw new Error('Room does not exist!');
-    }
-
-    const newBalance = (roomDoc.data().balance || 0) + amount;
-    
-    transaction.update(roomRef, { 
-      balance: newBalance,
-      lastPurchase: {
-        productName,
-        amount,
-        timestamp
-      }
-    });
-
-    // Add purchase to history
-    const purchaseRef = collection(db, 'purchases');
-    transaction.set(doc(purchaseRef), {
-      roomId,
+  // Add purchase record
+  await addDoc(purchasesRef, purchase);
+  
+  // Update room balance
+  const roomRef = doc(db, 'rooms', roomId);
+  const roomDoc = await getDoc(roomRef);
+  const currentBalance = roomDoc.data()?.balance || 0;
+  
+  await updateDoc(roomRef, {
+    balance: currentBalance + amount,
+    lastPurchase: {
+      productId,
       productName,
       amount,
-      timestamp,
-      balanceAfter: newBalance
-    });
+      timestamp: serverTimestamp(),
+    },
   });
 };
 
@@ -87,34 +80,6 @@ export const getAdminConfig = async () => {
 export const updateAdminConfig = async (data) => {
   const configRef = doc(db, 'adminConfig', 'general');
   await updateDoc(configRef, data);
-};
-
-export const getTotalSales = async () => {
-  const querySnapshot = await getDocs(collection(db, 'purchases'));
-  return querySnapshot.docs.reduce((total, doc) => total + doc.data().amount, 0);
-};
-
-export const resetAllBalances = async () => {
-  const roomsSnapshot = await getDocs(collection(db, 'rooms'));
-  
-  const batch = db.batch();
-  roomsSnapshot.docs.forEach((doc) => {
-    batch.update(doc.ref, { balance: 0 });
-  });
-  
-  await batch.commit();
-};
-
-export const getPurchaseHistory = async (startDate, endDate) => {
-  const q = query(
-    collection(db, 'purchases'),
-    where('timestamp', '>=', startDate),
-    where('timestamp', '<=', endDate),
-    orderBy('timestamp', 'desc')
-  );
-  
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
 // FCM Token Operations
@@ -131,10 +96,10 @@ export const saveToken = async (token, roomId) => {
 export const initializeDefaultData = async () => {
   // Initialize products if they don't exist
   const defaultProducts = {
-    beer: { name: 'Beer', price: 7 },
-    soda: { name: 'Soda', price: 5 },
-    snacks: { name: 'Snacks', price: 10 },
-    water: { name: 'Water', price: 3 },
+    beer: { id: 'beer', name: 'Øl', price: 7 },
+    soda: { id: 'soda', name: 'Sodavand', price: 5 },
+    snacks: { id: 'snacks', name: 'Snacks', price: 10 },
+    water: { id: 'water', name: 'Vand', price: 3 },
   };
 
   for (const [id, data] of Object.entries(defaultProducts)) {

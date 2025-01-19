@@ -14,10 +14,10 @@ import EditIcon from '@mui/icons-material/Edit';
 import { getRoom, updateRoom, addPurchase, getProducts, initializeDefaultData } from '../../firebase/services';
 
 const DEFAULT_PRODUCTS = [
-  { name: 'Øl', price: 7 },
-  { name: 'Sodavand', price: 5 },
-  { name: 'Snacks', price: 10 },
-  { name: 'Vand', price: 3 }
+  { id: 'beer', name: 'Øl', price: 7 },
+  { id: 'soda', name: 'Sodavand', price: 5 },
+  { id: 'snacks', name: 'Snacks', price: 10 },
+  { id: 'water', name: 'Vand', price: 3 }
 ];
 
 const RoomPurchase = () => {
@@ -60,11 +60,11 @@ const RoomPurchase = () => {
     }
   };
 
-  const handlePurchase = async (productName) => {
+  const handlePurchase = async (productId) => {
     try {
-      const product = products.find(p => p.name === productName);
+      const product = products.find(p => p.id === productId);
       if (!product) {
-        console.error('Product not found:', productName);
+        console.error('Product not found:', productId);
         return;
       }
 
@@ -84,6 +84,7 @@ const RoomPurchase = () => {
       // Make the actual purchase
       await addPurchase({
         roomId,
+        productId,
         productName: product.name,
         amount: product.price,
       });
@@ -259,11 +260,11 @@ const RoomPurchase = () => {
         {/* Purchase Buttons */}
         <Grid container spacing={2}>
           {products.map((product) => (
-            <Grid item xs={6} key={product.name}>
+            <Grid item xs={6} key={product.id}>
               <Button 
                 fullWidth 
                 variant="contained" 
-                onClick={() => handlePurchase(product.name)}
+                onClick={() => handlePurchase(product.id)}
                 sx={{ 
                   bgcolor: '#e74c3c',
                   py: 2,
