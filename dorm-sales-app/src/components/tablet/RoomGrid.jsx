@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Grid, Paper, Typography, Box, Container } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useFirestore } from '../../hooks/useFirestore';
+import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
 
 const RoomGrid = () => {
   const navigate = useNavigate();
@@ -22,6 +23,10 @@ const RoomGrid = () => {
   const RoomTile = ({ roomId }) => {
     const room = roomsMap[roomId] || { occupantName: '', balance: 0 };
     
+    // Find room with highest balance
+    const maxBalance = Math.max(...rooms.map(r => r.balance || 0));
+    const isHighestBalance = room.balance > 0 && room.balance === maxBalance;
+    
     return (
       <Paper
         elevation={3}
@@ -35,6 +40,7 @@ const RoomGrid = () => {
           backgroundColor: room.balance > 0 ? '#fff3e0' : '#fff',
           borderRadius: '12px',
           transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+          position: 'relative',
           '&:hover': {
             transform: 'scale(1.02)',
             boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
@@ -42,6 +48,19 @@ const RoomGrid = () => {
         }}
         onClick={() => handleRoomClick(roomId)}
       >
+        {isHighestBalance && (
+          <WorkspacePremiumIcon 
+            sx={{ 
+              position: 'absolute',
+              top: -10,
+              right: -10,
+              color: '#ffd700',
+              fontSize: '2rem',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+              transform: 'rotate(12deg)',
+            }} 
+          />
+        )}
         <Typography 
           variant="h4" 
           component="div" 

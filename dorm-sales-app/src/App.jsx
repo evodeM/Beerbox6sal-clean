@@ -1,21 +1,22 @@
-import { useState } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import TabletLayout from './components/tablet/TabletLayout';
 import RoomGrid from './components/tablet/RoomGrid';
 import RoomPurchase from './components/tablet/RoomPurchase';
 import './App.css'
 
-function App() {
+const App = () => {
   return (
-    <Router>
-      <TabletLayout>
-        <Routes>
-          <Route path="/" element={<RoomGrid />} />
-          <Route path="/room/:roomId" element={<RoomPurchase />} />
-        </Routes>
-      </TabletLayout>
+    <Router basename="/dorm-sales-app">
+      <Routes>
+        <Route path="/" element={<TabletLayout />}>
+          <Route index element={<RoomGrid />} />
+          <Route path="room/:roomId" element={<RoomPurchase />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Router>
   );
-}
+};
 
 export default App;
