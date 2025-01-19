@@ -6,32 +6,44 @@ import {
   Button, 
   Paper,
   Grid,
-  IconButton,
-  Container,
-  Divider
+  Container
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { getRoom, updateRoom, addPurchase, getProducts } from '../../firebase/services';
+import EditIcon from '@mui/icons-material/Edit';
+import { getRoom, updateRoom, addPurchase, getProducts, initializeDefaultData } from '../../firebase/services';
+
+const DEFAULT_PRODUCTS = [
+  { name: 'Øl', price: 7 },
+  { name: 'Sodavand', price: 5 },
+  { name: 'Snacks', price: 10 },
+  { name: 'Vand', price: 3 }
+];
 
 const RoomPurchase = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const [room, setRoom] = useState({ occupantName: '', balance: 0 });
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(DEFAULT_PRODUCTS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        // Initialize default products if needed
+        await initializeDefaultData();
+        
         const [roomData, productsData] = await Promise.all([
           getRoom(roomId),
           getProducts()
         ]);
+        
         setRoom(roomData || { occupantName: '', balance: 0 });
-        setProducts(productsData);
+        setProducts(productsData.length > 0 ? productsData : DEFAULT_PRODUCTS);
       } catch (error) {
         console.error('Error loading data:', error);
+        // Fallback to default products on error
+        setProducts(DEFAULT_PRODUCTS);
       } finally {
         setLoading(false);
       }
@@ -50,32 +62,44 @@ const RoomPurchase = () => {
 
   const handlePurchase = async (productName) => {
     try {
-      const product = products.find(p => p.name.toLowerCase() === productName.toLowerCase());
+      const product = products.find(p => p.name === productName);
       if (!product) {
         console.error('Product not found:', productName);
         return;
       }
 
+      // Optimistically update the UI
+      const newBalance = (room.balance || 0) + product.price;
+      const timestamp = new Date();
+      setRoom(prev => ({
+        ...prev,
+        balance: newBalance,
+        lastPurchase: {
+          productName: product.name,
+          amount: product.price,
+          timestamp
+        }
+      }));
+
+      // Make the actual purchase
       await addPurchase({
         roomId,
         productName: product.name,
         amount: product.price,
       });
 
-      const updatedRoom = await getRoom(roomId);
-      setRoom(updatedRoom);
     } catch (error) {
       console.error('Error making purchase:', error);
+      // Revert optimistic update on error by fetching latest data
+      const updatedRoom = await getRoom(roomId);
+      setRoom(updatedRoom || { occupantName: '', balance: 0 });
     }
   };
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
-    const date = timestamp.toDate();
+    const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
     return date.toLocaleString('da-DK', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -84,7 +108,7 @@ const RoomPurchase = () => {
   return (
     <Box 
       sx={{ 
-        bgcolor: '#1a1a1a', 
+        bgcolor: '#f5f6fa', 
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column'
@@ -102,48 +126,82 @@ const RoomPurchase = () => {
             variant="h3" 
             component="h1"
             sx={{ 
-              color: 'white',
+              color: '#2c3e50',
               fontWeight: 'bold',
               mb: 2
             }}
           >
-            {roomId}
+            Værelse {roomId}
           </Typography>
-          <TextField
-            variant="standard"
-            placeholder="Beboer navn"
-            value={room.occupantName}
-            onChange={(e) => handleOccupantNameChange(e.target.value)}
-            sx={{
-              width: '100%',
-              maxWidth: 300,
-              '& .MuiInput-root': {
-                color: 'white',
-                fontSize: '1.5rem',
-                textAlign: 'center',
-                '&:before': {
-                  borderColor: 'rgba(255,255,255,0.3)',
-                },
-                '&:hover:not(.Mui-disabled):before': {
-                  borderColor: 'rgba(255,255,255,0.5)',
-                },
-                '&.Mui-focused:after': {
-                  borderColor: '#e74c3c',
-                },
-              },
-              '& .MuiInput-input': {
-                textAlign: 'center',
-              }
-            }}
-          />
+          <Box sx={{ 
+            position: 'relative', 
+            width: '100%',
+            maxWidth: 300,
+          }}>
+            <TextField
+              variant="outlined"
+              placeholder="Klik for at tilføje beboer"
+              value={room.occupantName}
+              onChange={(e) => handleOccupantNameChange(e.target.value)}
+              sx={{
+                width: '100%',
+                '& .MuiOutlinedInput-root': {
+                  fontSize: '1.2rem',
+                  textAlign: 'center',
+                  '& fieldset': {
+                    borderColor: 'rgba(0,0,0,0.2)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#e74c3c',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#e74c3c',
+                  },
+                  '& input': {
+                    textAlign: 'center',
+                    color: '#2c3e50',
+                    '&::placeholder': {
+                      color: '#666',
+                      opacity: 0.7
+                    }
+                  }
+                }
+              }}
+              InputProps={{
+                endAdornment: (
+                  <EditIcon 
+                    sx={{ 
+                      color: '#666',
+                      opacity: 0.7,
+                      mr: 1,
+                      transition: 'all 0.2s',
+                      '.MuiOutlinedInput-root:hover &': {
+                        color: '#e74c3c',
+                        opacity: 1
+                      }
+                    }} 
+                  />
+                )
+              }}
+            />
+          </Box>
         </Box>
 
         {/* Balance */}
-        <Box sx={{ mb: 6, textAlign: 'center' }}>
+        <Paper 
+          elevation={3}
+          sx={{ 
+            p: 4, 
+            mb: 4, 
+            textAlign: 'center',
+            bgcolor: room.balance > 0 ? '#fff3e0' : 'white',
+            borderRadius: 3
+          }}
+        >
           <Typography 
             variant="h6" 
             sx={{ 
-              color: 'rgba(255,255,255,0.7)',
+              color: '#666',
               mb: 1
             }}
           >
@@ -152,76 +210,87 @@ const RoomPurchase = () => {
           <Typography 
             variant="h2"
             sx={{ 
-              color: 'white',
+              color: room.balance > 0 ? '#e74c3c' : '#2c3e50',
               fontWeight: 'bold'
             }}
           >
             {room.balance?.toFixed(2)} kr
           </Typography>
-        </Box>
+        </Paper>
 
         {/* Last Purchase */}
         {room.lastPurchase && (
           <Paper 
-            elevation={0}
+            elevation={3}
             sx={{ 
-              bgcolor: 'rgba(255,255,255,0.05)',
+              bgcolor: 'white',
               p: 3,
-              mb: 6,
-              borderRadius: 3,
-              backdropFilter: 'blur(10px)'
+              mb: 4,
+              borderRadius: 3
             }}
           >
             <Typography 
               variant="overline" 
               sx={{ 
-                color: 'rgba(255,255,255,0.7)',
+                color: '#666',
                 display: 'block',
-                mb: 2
+                mb: 1,
+                fontSize: '0.85rem'
               }}
             >
-              SIDSTE KØB
+              SENESTE KØB
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Typography variant="h6" sx={{ color: 'white' }}>
-                  {room.lastPurchase.productName}
-                </Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography sx={{ color: 'rgba(255,255,255,0.7)' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6" sx={{ color: '#2c3e50', fontWeight: 'bold' }}>
+                {room.lastPurchase.productName}
+              </Typography>
+              <Box sx={{ textAlign: 'right' }}>
+                <Typography sx={{ color: '#e74c3c', fontSize: '1.1rem', fontWeight: 'bold' }}>
                   {room.lastPurchase.amount?.toFixed(2)} kr
                 </Typography>
-              </Grid>
-              <Grid item xs={6} sx={{ textAlign: 'right' }}>
-                <Typography sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                <Typography sx={{ color: '#666', fontSize: '0.9rem' }}>
                   {formatTimestamp(room.lastPurchase.timestamp)}
                 </Typography>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Paper>
         )}
 
         {/* Purchase Buttons */}
-        <Grid container spacing={2} sx={{ mb: 4 }}>
-          {['Beer', 'Soda', 'Snacks', 'Water'].map((product) => (
-            <Grid item xs={6} key={product}>
+        <Grid container spacing={2}>
+          {products.map((product) => (
+            <Grid item xs={6} key={product.name}>
               <Button 
                 fullWidth 
                 variant="contained" 
-                onClick={() => handlePurchase(product.toLowerCase())}
+                onClick={() => handlePurchase(product.name)}
                 sx={{ 
                   bgcolor: '#e74c3c',
-                  py: 3,
-                  borderRadius: 3,
-                  fontSize: '1.2rem',
+                  py: 2,
+                  borderRadius: 2,
+                  fontSize: '1.1rem',
                   fontWeight: 'bold',
+                  boxShadow: '0 2px 8px rgba(231,76,60,0.3)',
+                  display: 'flex',
+                  flexDirection: 'column',
                   '&:hover': {
-                    bgcolor: '#c0392b'
+                    bgcolor: '#c0392b',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(231,76,60,0.4)'
                   }
                 }}
               >
-                {product}
+                <Box>{product.name}</Box>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    opacity: 0.9,
+                    fontSize: '0.9rem',
+                    fontWeight: 'normal'
+                  }}
+                >
+                  {product.price} kr
+                </Typography>
               </Button>
             </Grid>
           ))}
@@ -229,7 +298,7 @@ const RoomPurchase = () => {
       </Container>
 
       {/* Back Button */}
-      <Box sx={{ p: 2, bgcolor: 'rgba(0,0,0,0.3)' }}>
+      <Box sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.1)', bgcolor: 'white' }}>
         <Container maxWidth="sm">
           <Button
             fullWidth
@@ -237,11 +306,12 @@ const RoomPurchase = () => {
             onClick={() => navigate('/')}
             startIcon={<ArrowBackIcon />}
             sx={{ 
-              color: 'white',
-              py: 2,
-              fontSize: '1.1rem',
+              color: '#666',
+              py: 1.5,
+              fontSize: '1rem',
               '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.1)'
+                bgcolor: 'rgba(0,0,0,0.05)',
+                color: '#2c3e50'
               }
             }}
           >
