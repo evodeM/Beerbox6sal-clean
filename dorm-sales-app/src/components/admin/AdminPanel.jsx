@@ -16,7 +16,7 @@ import {
 import SettingsIcon from '@mui/icons-material/Settings';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
-import { getTotalSales, getProducts, updateProduct, resetAllBalances, getAdminConfig, updateAdminConfig } from '../../firebase/services';
+import { getTotalSales, getProducts, updateProduct, resetAllBalances, getAdminConfig, updateAdminConfig, ensureDefaultProducts } from '../../firebase/services';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -28,6 +28,9 @@ const AdminPanel = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      // Ensure we have all default products
+      await ensureDefaultProducts();
+      
       const sales = await getTotalSales();
       setTotalSales(sales);
       

@@ -138,6 +138,28 @@ export const saveToken = async (token, roomId) => {
   });
 };
 
+// Initialize default products if they don't exist
+export const ensureDefaultProducts = async () => {
+  const defaultProducts = [
+    { id: 'beer', name: 'Beer', price: 7 },
+    { id: 'soda', name: 'Soda', price: 5 },
+    { id: 'snacks', name: 'Snacks', price: 10 },
+    { id: 'water', name: 'Water', price: 3 }
+  ];
+
+  for (const product of defaultProducts) {
+    const docRef = doc(db, 'products', product.id);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      await setDoc(docRef, {
+        name: product.name,
+        price: product.price
+      });
+    }
+  }
+};
+
 // Initialize default data (if needed)
 export const initializeDefaultData = async () => {
   // Initialize products if they don't exist
