@@ -8,6 +8,9 @@ const RoomGrid = () => {
   const navigate = useNavigate();
   const { data: rooms } = useFirestore('rooms');
 
+  // Find room with highest balance
+  const maxBalance = Math.max(...rooms.map(room => room.balance || 0));
+
   // Memoize room data to prevent unnecessary re-renders
   const roomsMap = useMemo(() => {
     return rooms.reduce((acc, room) => {
@@ -22,11 +25,8 @@ const RoomGrid = () => {
 
   const RoomTile = ({ roomId }) => {
     const room = roomsMap[roomId] || { occupantName: '', balance: 0 };
-    
-    // Find room with highest balance
-    const maxBalance = Math.max(...rooms.map(r => r.balance || 0));
-    const isHighestBalance = room.balance > 0 && room.balance === maxBalance;
-    
+    const isHighestBalance = room.balance === maxBalance && room.balance > 0;
+
     return (
       <Paper
         elevation={3}
