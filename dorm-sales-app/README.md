@@ -2,6 +2,9 @@
 
 A real-time sales tracking application for dorm residents. Built with React and Firebase.
 
+## Live Demo
+Visit the live application at: https://evodem.github.io/Beerbox6sal-clean/
+
 ## Features
 
 - Real-time purchase tracking
@@ -9,6 +12,8 @@ A real-time sales tracking application for dorm residents. Built with React and 
 - Product catalog (Beer, Soda, Snacks, Water)
 - Instant balance updates
 - Offline capability
+- Clean and modern UI
+- Mobile-responsive design
 
 ## Firebase Setup
 
@@ -45,7 +50,18 @@ The app uses Firebase Firestore for real-time data storage. The database structu
    npm run dev
    ```
 
-3. Open http://localhost:5173/Beerbox6sal/
+3. Open http://localhost:5173/
+
+## Deployment
+
+The app is deployed using GitHub Pages. To deploy new changes:
+
+1. Make your changes and commit them
+2. Run the deployment command:
+   ```bash
+   npm run deploy
+   ```
+3. The changes will be live in a few minutes at https://evodem.github.io/Beerbox6sal-clean/
 
 ## Firebase Configuration
 
@@ -75,3 +91,9 @@ The app uses Firebase Firestore for real-time data storage. The database structu
 - Fixed Firebase permissions
 - Added purchase logging
 - Improved error handling
+
+### v1.2.0 - UI Improvements & GitHub Pages
+- Removed balance display from grid view
+- Added crown indicator for highest balance
+- Deployed to GitHub Pages
+- Fixed routing for production deployment
