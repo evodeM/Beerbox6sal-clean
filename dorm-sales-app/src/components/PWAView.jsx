@@ -113,31 +113,12 @@ const PWAView = () => {
 
         const roomData = await getRoom(roomId);
         console.log('Room data loaded:', roomData);
-
-        // Fetch recent purchases directly from Firestore
-        const purchasesRef = collection(db, 'rooms', roomId, 'purchases');
-        const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
-        
-        const snapshot = await getDocs(purchasesQuery);
-        const recentPurchases = [];
-        
-        snapshot.forEach((doc) => {
-          const purchaseData = doc.data();
-          recentPurchases.push({ 
-            id: doc.id, 
-            ...purchaseData,
-            timestamp: purchaseData.timestamp
-          });
+        setRoom(roomData || { 
+          occupantName: '', 
+          balance: 0,
+          lastPurchase: null,
+          recentPurchases: []
         });
-
-        // Merge recent purchases with room data
-        const updatedRoomData = {
-          ...roomData,
-          recentPurchases
-        };
-
-        console.log('Updated room data:', updatedRoomData);
-        setRoom(updatedRoomData);
       } catch (error) {
         console.error('Error loading data:', error);
         setError(error);
@@ -241,19 +222,44 @@ const PWAView = () => {
       </PayButton>
 
       <Section>
-        <SectionTitle>Seneste 5 køb</SectionTitle>
+        <SectionTitle>Seneste køb</SectionTitle>
         {error && (
           <Typography variant="body2" color="error">
             Fejl ved hentning af køb: {error.message}
           </Typography>
         )}
+        {room.lastPurchase && (
+          <Box sx={{ 
+            mb: 2, 
+            pb: 2, 
+            borderBottom: '1px solid #e0e0e0'
+          }}>
+            <Typography variant="body2" sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              color: '#333333'
+            }}>
+              <span>Seneste køb: {room.lastPurchase.productName}</span>
+              <span>Pris: {room.lastPurchase.amount} kr</span>
+            </Typography>
+            {room.lastPurchase.timestamp && (
+              <Typography variant="caption" sx={{ 
+                display: 'block', 
+                mt: 0.5, 
+                color: '#666666' 
+              }}>
+                {formatTimestamp(room.lastPurchase.timestamp)}
+              </Typography>
+            )}
+          </Box>
+        )}
+
         {room.recentPurchases && room.recentPurchases.length > 0 && (
           room.recentPurchases.map((purchase) => (
             <Box key={purchase.id} sx={{ 
               mb: 2, 
               pb: 2, 
-              borderBottom: '1px solid #e0e0e0',
-              '&:last-child': { borderBottom: 'none' }
+              borderBottom: '1px solid #e0e0e0'
             }}>
               <Typography variant="body2" sx={{ 
                 display: 'flex', 
@@ -276,7 +282,7 @@ const PWAView = () => {
           ))
         )}
 
-        {!room.recentPurchases || room.recentPurchases.length === 0 && (
+        {!room.lastPurchase && (!room.recentPurchases || room.recentPurchases.length === 0) && (
           <Typography variant="body2" sx={{ color: '#666666' }}>
             Ingen seneste køb
           </Typography>
