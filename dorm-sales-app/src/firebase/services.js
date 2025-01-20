@@ -8,6 +8,7 @@ import {
   updateDoc,
   addDoc,
   serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore';
 
 // Room Operations
@@ -153,6 +154,45 @@ export const saveToken = async (token, roomId) => {
     console.log('Token saved successfully');
   } catch (error) {
     console.error('Error saving token:', error);
+    throw error;
+  }
+};
+
+// Total Sales Operations
+export const getTotalSales = async () => {
+  try {
+    const roomsRef = collection(db, 'rooms');
+    const snapshot = await getDocs(roomsRef);
+    const totalSales = snapshot.docs.reduce((total, roomDoc) => {
+      const roomData = roomDoc.data();
+      return total + (roomData.balance || 0);
+    }, 0);
+    return totalSales;
+  } catch (error) {
+    console.error('Error calculating total sales:', error);
+    throw error;
+  }
+};
+
+export const resetAllBalances = async () => {
+  try {
+    const roomsRef = collection(db, 'rooms');
+    const snapshot = await getDocs(roomsRef);
+    
+    const batch = writeBatch(db);
+    
+    snapshot.docs.forEach(roomDoc => {
+      const roomRef = doc(db, 'rooms', roomDoc.id);
+      batch.update(roomRef, { 
+        balance: 0, 
+        lastResetTimestamp: serverTimestamp() 
+      });
+    });
+    
+    await batch.commit();
+    console.log('All room balances reset successfully');
+  } catch (error) {
+    console.error('Error resetting room balances:', error);
     throw error;
   }
 };
