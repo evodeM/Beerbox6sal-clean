@@ -30,6 +30,7 @@ const RoomPurchase = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log('Loading data for room:', roomId);
         // Initialize default products if needed
         await initializeDefaultData();
         
@@ -37,6 +38,9 @@ const RoomPurchase = () => {
           getRoom(roomId),
           getProducts()
         ]);
+        
+        console.log('Room data loaded:', roomData);
+        console.log('Products loaded:', productsData);
         
         setRoom(roomData || { occupantName: '', balance: 0 });
         setProducts(productsData.length > 0 ? productsData : DEFAULT_PRODUCTS);
@@ -53,8 +57,10 @@ const RoomPurchase = () => {
 
   const handleOccupantNameChange = async (newName) => {
     try {
+      console.log('Updating occupant name to:', newName);
       await updateRoom(roomId, { occupantName: newName });
       setRoom(prev => ({ ...prev, occupantName: newName }));
+      console.log('Occupant name updated successfully');
     } catch (error) {
       console.error('Error updating occupant name:', error);
     }
@@ -62,15 +68,21 @@ const RoomPurchase = () => {
 
   const handlePurchase = async (productId) => {
     try {
+      console.log('Starting purchase for product:', productId);
       const product = products.find(p => p.id === productId);
       if (!product) {
         console.error('Product not found:', productId);
         return;
       }
 
+      console.log('Product found:', product);
+      console.log('Current room state:', room);
+
       // Optimistically update the UI
       const newBalance = (room.balance || 0) + product.price;
       const timestamp = new Date();
+      console.log('New balance will be:', newBalance);
+
       setRoom(prev => ({
         ...prev,
         balance: newBalance,
@@ -81,6 +93,7 @@ const RoomPurchase = () => {
         }
       }));
 
+      console.log('Making purchase in Firebase...');
       // Make the actual purchase
       await addPurchase({
         roomId,
@@ -88,6 +101,7 @@ const RoomPurchase = () => {
         productName: product.name,
         amount: product.price,
       });
+      console.log('Purchase completed successfully');
 
     } catch (error) {
       console.error('Error making purchase:', error);

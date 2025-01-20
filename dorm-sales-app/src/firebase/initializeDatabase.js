@@ -1,5 +1,5 @@
 import { db } from './config.js';
-import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const initializeDatabase = async () => {
     try {
@@ -35,6 +35,16 @@ const initializeDatabase = async () => {
         await setDoc(doc(db, 'adminConfig', 'general'), {
             mobilePayPhoneNumber: '12345678',  // Default number, should be changed by admin
             adminPassword: 'admin123'          // Default password, should be changed immediately
+        });
+
+        // Initialize Purchases Collection with a sample purchase
+        const purchasesRef = collection(db, 'purchases');
+        await addDoc(purchasesRef, {
+            roomId: '601',
+            productId: 'beer',
+            productName: 'Beer',
+            amount: 7,
+            timestamp: serverTimestamp()
         });
 
         console.log('Database initialized successfully!');
