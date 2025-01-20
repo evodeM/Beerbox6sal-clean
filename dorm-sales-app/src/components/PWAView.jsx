@@ -11,9 +11,14 @@ import { styled } from '@mui/material/styles';
 import { db } from '../firebase/config';
 import { 
   doc, 
-  getDoc 
+  getDoc,
+  collection,
+  query,
+  orderBy,
+  limit,
+  getDocs
 } from 'firebase/firestore';
-import { getRoom, getProducts } from '../firebase/services';
+import { getRoom } from '../firebase/services';
 
 const StyledContainer = styled(Container)({
   minHeight: '100vh',
@@ -107,20 +112,22 @@ const PWAView = () => {
 
         setRoom(roomData || { occupantName: '', balance: 0 });
         
-        // Fetch recent purchases
-        const purchasesQuery = {
-          roomId,
-          limit: 5
-        };
-        const purchasesSnapshot = await fetch('/api/recentPurchases', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(purchasesQuery)
+        // Fetch recent purchases directly from Firestore
+        const purchasesRef = collection(db, 'rooms', roomId, 'purchases');
+        const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
+        
+        const snapshot = await getDocs(purchasesQuery);
+        const purchases = [];
+        
+        snapshot.forEach((doc) => {
+          const purchaseData = doc.data();
+          purchases.push({ 
+            id: doc.id, 
+            ...purchaseData,
+            timestamp: purchaseData.timestamp
+          });
         });
         
-        const purchases = await purchasesSnapshot.json();
         console.log('Fetched purchases:', purchases);
         setRecentPurchases(purchases);
       } catch (error) {
