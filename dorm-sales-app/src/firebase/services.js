@@ -1,4 +1,4 @@
-import { db } from './config.js';
+import { db } from './config';
 import {
   collection,
   doc,
@@ -41,13 +41,10 @@ export const updateProduct = async (productId, data) => {
 };
 
 // Purchase Operations
-export const addPurchase = async ({ roomId, productId, productName, amount }) => {
+export const addPurchase = async (purchaseData) => {
   const purchasesRef = collection(db, 'purchases');
   const purchase = {
-    roomId,
-    productId,
-    productName,
-    amount,
+    ...purchaseData,
     timestamp: serverTimestamp(),
   };
   
@@ -55,16 +52,15 @@ export const addPurchase = async ({ roomId, productId, productName, amount }) =>
   await addDoc(purchasesRef, purchase);
   
   // Update room balance
-  const roomRef = doc(db, 'rooms', roomId);
+  const roomRef = doc(db, 'rooms', purchaseData.roomId);
   const roomDoc = await getDoc(roomRef);
   const currentBalance = roomDoc.data()?.balance || 0;
   
   await updateDoc(roomRef, {
-    balance: currentBalance + amount,
+    balance: currentBalance + purchaseData.amount,
     lastPurchase: {
-      productId,
-      productName,
-      amount,
+      productName: purchaseData.productName,
+      amount: purchaseData.amount,
       timestamp: serverTimestamp(),
     },
   });
@@ -96,10 +92,10 @@ export const saveToken = async (token, roomId) => {
 export const initializeDefaultData = async () => {
   // Initialize products if they don't exist
   const defaultProducts = {
-    beer: { id: 'beer', name: 'Øl', price: 7 },
-    soda: { id: 'soda', name: 'Sodavand', price: 5 },
-    snacks: { id: 'snacks', name: 'Snacks', price: 10 },
-    water: { id: 'water', name: 'Vand', price: 3 },
+    beer: { name: 'Beer', price: 7 },
+    soda: { name: 'Soda', price: 5 },
+    snacks: { name: 'Snacks', price: 10 },
+    water: { name: 'Water', price: 3 },
   };
 
   for (const [id, data] of Object.entries(defaultProducts)) {
