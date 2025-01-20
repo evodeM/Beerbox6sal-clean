@@ -5,6 +5,7 @@ import RoomGrid from './components/tablet/RoomGrid';
 import RoomPurchase from './components/tablet/RoomPurchase';
 import PWAView from './components/PWAView';
 import EnhancedPWAView from './components/EnhancedPWAView';
+import AdminLayout from './components/admin/AdminLayout';
 import './App.css'
 
 // Device detection component
@@ -80,6 +81,9 @@ function App() {
         {/* Mobile routes */}
         <Route path="/PWAVIEW" element={<PWAView />} />
         <Route path="/enhanced-mobile" element={<EnhancedPWAView />} />
+        
+        {/* Admin route */}
+        <Route path="/admin" element={<AdminLayout />} />
         
         {/* Tablet/Desktop routes */}
         <Route path="/" element={<TabletLayout />}>

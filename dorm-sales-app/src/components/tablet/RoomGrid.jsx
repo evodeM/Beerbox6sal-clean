@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Grid, Paper, Typography, Box, Container, IconButton } from '@mui/material';
+import { Grid, Paper, Typography, Box, Container, IconButton, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { useFirestore } from '../../hooks/useFirestore';
 import WorkspacePremiumIcon from '@mui/icons-material/WorkspacePremium';
@@ -24,6 +24,10 @@ const RoomGrid = () => {
 
   const handleRoomClick = (roomId) => {
     navigate(`/room/${roomId}`);
+  };
+
+  const handleAdminClick = () => {
+    navigate('/admin');
   };
 
   const RoomTile = ({ roomId }) => {
@@ -106,35 +110,29 @@ const RoomGrid = () => {
         overflow: 'hidden'
       }}
     >
-      <IconButton
-        onClick={() => navigate('/admin')}
-        sx={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          color: '#2c3e50',
-          opacity: 0.7,
-          '&:hover': {
-            opacity: 1
-          }
-        }}
-      >
-        <SettingsIcon />
-      </IconButton>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+        <Typography 
+          variant="h3" 
+          component="h1" 
+          align="center" 
+          sx={{ 
+            color: '#2c3e50',
+            mb: 1,
+            fontWeight: 'bold'
+          }}
+        >
+          DormDrinks 6.sal
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<SettingsIcon />}
+          onClick={handleAdminClick}
+        >
+          Admin
+        </Button>
+      </Box>
 
-      <Typography 
-        variant="h3" 
-        component="h1" 
-        align="center" 
-        sx={{ 
-          color: '#2c3e50',
-          mb: 1,
-          fontWeight: 'bold'
-        }}
-      >
-        DormDrinks 6.sal
-      </Typography>
-      
       <Typography 
         variant="subtitle1" 
         component="div" 
