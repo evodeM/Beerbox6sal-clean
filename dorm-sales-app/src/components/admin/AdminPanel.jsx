@@ -1,434 +1,302 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  TextField, 
-  Button, 
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Container,
   Paper,
-  IconButton,
   Grid,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Container
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
-import SettingsIcon from '@mui/icons-material/Settings';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useNavigate } from 'react-router-dom';
-import { getTotalSales, getProducts, updateProduct, resetAllBalances, getAdminConfig, updateAdminConfig, ensureDefaultProducts } from '../../firebase/services';
+import { 
+  LockOutlined as LockIcon, 
+  Settings as SettingsIcon, 
+  FileDownload as ExportIcon 
+} from '@mui/icons-material';
+import { 
+  getAdminConfig, 
+  updateAdminConfig, 
+  getProducts, 
+  updateProduct, 
+  getTotalSales, 
+  resetAllBalances,
+  exportMonthlySales
+} from '../../firebase/services';
 
 const AdminPanel = () => {
-  const navigate = useNavigate();
-  const [totalSales, setTotalSales] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [products, setProducts] = useState([]);
-  const [notification, setNotification] = useState('');
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [totalSales, setTotalSales] = useState(0);
   const [mobilePayNumber, setMobilePayNumber] = useState('');
+  const [editProductDialogOpen, setEditProductDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      // Ensure we have all default products
-      await ensureDefaultProducts();
-      
-      const sales = await getTotalSales();
-      setTotalSales(sales);
-      
-      const productsData = await getProducts();
-      setProducts(productsData);
-
-      const adminConfig = await getAdminConfig();
-      setMobilePayNumber(adminConfig.mobilePayPhoneNumber || '');
+    const fetchAdminConfig = async () => {
+      try {
+        const config = await getAdminConfig();
+        setAdminPassword(config.adminPassword);
+        setMobilePayNumber(config.mobilePayPhoneNumber);
+      } catch (error) {
+        console.error('Error fetching admin config:', error);
+      }
     };
-    fetchData();
+
+    const fetchProducts = async () => {
+      try {
+        const productsData = await getProducts();
+        setProducts(productsData);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+
+    const fetchTotalSales = async () => {
+      try {
+        const sales = await getTotalSales();
+        setTotalSales(sales);
+      } catch (error) {
+        console.error('Error fetching total sales:', error);
+      }
+    };
+
+    fetchAdminConfig();
+    fetchProducts();
+    fetchTotalSales();
   }, []);
 
-  const handleProductUpdate = async (productId, updates) => {
+  const handleLogin = () => {
+    if (password === adminPassword) {
+      setIsAuthenticated(true);
+    } else {
+      alert('Forkert adgangskode');
+    }
+  };
+
+  const handleProductEdit = async () => {
     try {
-      await updateProduct(productId, updates);
+      await updateProduct(selectedProduct.id, {
+        name: selectedProduct.name,
+        price: selectedProduct.price
+      });
+      
       const updatedProducts = await getProducts();
       setProducts(updatedProducts);
+      setEditProductDialogOpen(false);
     } catch (error) {
-      console.error('Error updating product:', error);
+      console.error('Fejl ved opdatering af produkt:', error);
+    }
+  };
+
+  const handleMonthlyReset = async () => {
+    const confirmed = window.confirm('Er du sikker på, at du vil nulstille alle saldi?');
+    if (confirmed) {
+      try {
+        await resetAllBalances();
+        alert('Alle saldi er nulstillet');
+      } catch (error) {
+        console.error('Fejl ved nulstilling:', error);
+      }
+    }
+  };
+
+  const handleExportSales = async () => {
+    try {
+      const csvData = await exportMonthlySales();
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `sales_report_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Fejl ved eksport af salgsrapport:', error);
     }
   };
 
   const handleMobilePayUpdate = async () => {
     try {
       await updateAdminConfig({ mobilePayPhoneNumber: mobilePayNumber });
+      alert('MobilePay-nummer opdateret');
     } catch (error) {
-      console.error('Error updating MobilePay number:', error);
+      console.error('Fejl ved opdatering af MobilePay-nummer:', error);
     }
   };
 
-  const handleExportCSV = () => {
-    // TODO: Implement CSV export
-  };
-
-  const handleResetBalances = async () => {
-    try {
-      await resetAllBalances();
-      setConfirmDialogOpen(false);
-    } catch (error) {
-      console.error('Error resetting balances:', error);
-    }
-  };
-
-  const handleSendNotification = () => {
-    // TODO: Implement notification sending
-    setNotification('');
-  };
-
-  return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      bgcolor: '#f5f6fa',
-      py: 3
-    }}>
-      <Container maxWidth="md">
-        {/* Header */}
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          mb: 4,
-          gap: 2
-        }}>
-          <IconButton 
-            onClick={() => navigate('/')}
-            sx={{ color: '#2c3e50' }}
-          >
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography 
-            variant="h4" 
-            sx={{ 
-              color: '#2c3e50',
-              fontWeight: 'bold',
-              flexGrow: 1
-            }}
-          >
-            Admin Panel
-          </Typography>
-          <IconButton sx={{ color: '#2c3e50' }}>
-            <SettingsIcon />
-          </IconButton>
-        </Box>
-
-        {/* Total Sales */}
-        <Paper 
-          elevation={3}
+  if (!isAuthenticated) {
+    return (
+      <Container maxWidth="xs">
+        <Box 
           sx={{ 
-            p: 4, 
-            mb: 4, 
-            borderRadius: 3,
-            background: 'linear-gradient(135deg, #2c3e50 0%, #3498db 100%)',
-            color: 'white',
-            textAlign: 'center'
+            marginTop: 8, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center' 
           }}
         >
-          <Typography variant="h6" sx={{ mb: 1, opacity: 0.9 }}>
-            Total Sales
-          </Typography>
-          <Typography variant="h2" sx={{ fontWeight: 'bold' }}>
-            {totalSales} DKK
-          </Typography>
-        </Paper>
-
-        {/* MobilePay Settings */}
-        <Paper 
-          elevation={3}
-          sx={{ 
-            p: 3, 
-            mb: 4,
-            borderRadius: 3
-          }}
-        >
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              mb: 3,
-              color: '#2c3e50',
-              fontWeight: 'bold'
-            }}
-          >
-            MobilePay Indstillinger
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              fullWidth
-              label="MobilePay Nummer"
-              value={mobilePayNumber}
-              onChange={(e) => setMobilePayNumber(e.target.value)}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  bgcolor: '#fff',
-                  '&:hover fieldset': {
-                    borderColor: '#3498db',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#3498db',
-                  },
-                }
-              }}
-            />
-            <Button 
-              variant="contained"
-              onClick={handleMobilePayUpdate}
-              sx={{
-                bgcolor: '#e74c3c',
-                '&:hover': {
-                  bgcolor: '#c0392b',
-                }
-              }}
-            >
-              Gem
-            </Button>
-          </Box>
-        </Paper>
-
-        {/* Edit Products */}
-        <Paper 
-          elevation={3}
-          sx={{ 
-            p: 3, 
-            mb: 4,
-            borderRadius: 3
-          }}
-        >
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              mb: 3,
-              color: '#2c3e50',
-              fontWeight: 'bold'
-            }}
-          >
-            Rediger Produkter
-          </Typography>
-          <Grid container spacing={3}>
-            {products.map((product) => (
-              <Grid item xs={12} sm={6} key={product.id}>
-                <Box sx={{ mb: 2 }}>
-                  <Typography 
-                    variant="subtitle1" 
-                    sx={{ 
-                      mb: 1,
-                      color: '#666',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    Produkt Navn
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    value={product.name}
-                    onChange={(e) => handleProductUpdate(product.id, { name: e.target.value })}
-                    sx={{
-                      mb: 2,
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: '#fff',
-                        '&:hover fieldset': {
-                          borderColor: '#3498db',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#3498db',
-                        },
-                      }
-                    }}
-                  />
-                  <Typography 
-                    variant="subtitle1" 
-                    sx={{ 
-                      mb: 1,
-                      color: '#666',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    Pris (DKK)
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    value={product.price}
-                    onChange={(e) => handleProductUpdate(product.id, { price: Number(e.target.value) })}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        bgcolor: '#fff',
-                        '&:hover fieldset': {
-                          borderColor: '#3498db',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#3498db',
-                        },
-                      }
-                    }}
-                  />
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </Paper>
-
-        {/* Reports and Reset */}
-        <Paper 
-          elevation={3}
-          sx={{ 
-            p: 3, 
-            mb: 4,
-            borderRadius: 3
-          }}
-        >
-          <Grid container spacing={4}>
-            <Grid item xs={12} sm={6}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  mb: 2,
-                  color: '#2c3e50',
-                  fontWeight: 'bold'
-                }}
-              >
-                Generer Månedlig Rapport
-              </Typography>
-              <Button 
-                variant="contained"
-                onClick={handleExportCSV}
-                sx={{
-                  bgcolor: '#e74c3c',
-                  '&:hover': {
-                    bgcolor: '#c0392b',
-                  }
-                }}
-              >
-                Eksporter CSV
-              </Button>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  mb: 2,
-                  color: '#2c3e50',
-                  fontWeight: 'bold'
-                }}
-              >
-                Nulstil Saldi
-              </Typography>
-              <Button 
-                variant="contained"
-                color="error"
-                onClick={() => setConfirmDialogOpen(true)}
-                sx={{
-                  bgcolor: '#e74c3c',
-                  '&:hover': {
-                    bgcolor: '#c0392b',
-                  }
-                }}
-              >
-                Bekræft
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
-
-        {/* Send Notification */}
-        <Paper 
-          elevation={3}
-          sx={{ 
-            p: 3,
-            borderRadius: 3
-          }}
-        >
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              mb: 2,
-              color: '#2c3e50',
-              fontWeight: 'bold'
-            }}
-          >
-            Send Notifikation
+          <LockIcon sx={{ fontSize: 60, color: 'primary.main' }} />
+          <Typography component="h1" variant="h5">
+            Admin Login
           </Typography>
           <TextField
+            margin="normal"
+            required
             fullWidth
-            multiline
-            rows={3}
-            placeholder="Skriv din besked her..."
-            value={notification}
-            onChange={(e) => setNotification(e.target.value)}
-            sx={{
-              mb: 2,
-              '& .MuiOutlinedInput-root': {
-                bgcolor: '#fff',
-                '&:hover fieldset': {
-                  borderColor: '#3498db',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#3498db',
-                },
-              }
-            }}
+            label="Adgangskode"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
-          <Button 
-            variant="contained"
-            onClick={handleSendNotification}
+          <Button
             fullWidth
-            sx={{
-              bgcolor: '#e74c3c',
-              '&:hover': {
-                bgcolor: '#c0392b',
-              }
-            }}
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+            onClick={handleLogin}
           >
-            Send
+            Log ind
           </Button>
-        </Paper>
+        </Box>
       </Container>
+    );
+  }
 
-      {/* Confirm Dialog */}
+  return (
+    <Container maxWidth="md">
+      <Box sx={{ my: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Admin Panel
+        </Typography>
+
+        <Grid container spacing={3}>
+          {/* Products Section */}
+          <Grid item xs={12}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6">Produkter</Typography>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Navn</TableCell>
+                      <TableCell align="right">Pris</TableCell>
+                      <TableCell align="right">Handlinger</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {products.map((product) => (
+                      <TableRow key={product.id}>
+                        <TableCell>{product.name}</TableCell>
+                        <TableCell align="right">{product.price} kr</TableCell>
+                        <TableCell align="right">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => {
+                              setSelectedProduct(product);
+                              setEditProductDialogOpen(true);
+                            }}
+                          >
+                            Rediger
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </Grid>
+
+          {/* Sales and Reset Section */}
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6">Salgsrapport</Typography>
+              <Typography>Samlet salg: {totalSales} kr</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                <Button
+                  variant="contained"
+                  startIcon={<ExportIcon />}
+                  onClick={handleExportSales}
+                >
+                  Eksporter CSV
+                </Button>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={handleMonthlyReset}
+                >
+                  Nulstil saldi
+                </Button>
+              </Box>
+            </Paper>
+          </Grid>
+
+          {/* MobilePay Configuration */}
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 3 }}>
+              <Typography variant="h6">MobilePay Indstillinger</Typography>
+              <TextField
+                fullWidth
+                label="MobilePay Nummer"
+                value={mobilePayNumber}
+                onChange={(e) => setMobilePayNumber(e.target.value)}
+                sx={{ mt: 2 }}
+              />
+              <Button
+                variant="contained"
+                sx={{ mt: 2 }}
+                onClick={handleMobilePayUpdate}
+              >
+                Opdater
+              </Button>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* Edit Product Dialog */}
       <Dialog 
-        open={confirmDialogOpen} 
-        onClose={() => setConfirmDialogOpen(false)}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            p: 2
-          }
-        }}
+        open={editProductDialogOpen} 
+        onClose={() => setEditProductDialogOpen(false)}
       >
-        <DialogTitle sx={{ 
-          color: '#2c3e50',
-          fontWeight: 'bold'
-        }}>
-          Bekræft Nulstilling
-        </DialogTitle>
+        <DialogTitle>Rediger Produkt</DialogTitle>
         <DialogContent>
-          <Typography color="text.secondary">
-            Er du sikker på at du vil nulstille alle saldi? Denne handling kan ikke fortrydes.
-          </Typography>
+          <TextField
+            label="Navn"
+            fullWidth
+            value={selectedProduct?.name || ''}
+            onChange={(e) => setSelectedProduct(prev => ({ ...prev, name: e.target.value }))}
+            sx={{ mb: 2, mt: 2 }}
+          />
+          <TextField
+            label="Pris"
+            type="number"
+            fullWidth
+            value={selectedProduct?.price || ''}
+            onChange={(e) => setSelectedProduct(prev => ({ ...prev, price: Number(e.target.value) }))}
+          />
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={() => setConfirmDialogOpen(false)}
-            sx={{ color: '#666' }}
-          >
-            Annuller
-          </Button>
-          <Button 
-            onClick={handleResetBalances} 
-            sx={{
-              bgcolor: '#e74c3c',
-              color: 'white',
-              '&:hover': {
-                bgcolor: '#c0392b',
-              }
-            }}
-          >
-            Nulstil
-          </Button>
+          <Button onClick={() => setEditProductDialogOpen(false)}>Annuller</Button>
+          <Button onClick={handleProductEdit} variant="contained">Gem</Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </Container>
   );
 };
 
