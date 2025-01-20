@@ -92,39 +92,41 @@ const PWAView = () => {
   useEffect(() => {
     if (!roomId) return;
 
-    // Listen for room data changes
+    // Real-time listeners for room data and purchases
     const roomRef = doc(db, 'rooms', roomId);
-    const unsubscribe = onSnapshot(roomRef, (doc) => {
+    const purchasesRef = collection(db, 'rooms', roomId, 'purchases');
+    const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
+
+    // Room data listener
+    const roomUnsubscribe = onSnapshot(roomRef, (doc) => {
       if (doc.exists()) {
+        console.log('Room data updated:', doc.data());
         setRoom(doc.data());
       }
+    }, (error) => {
+      console.error('Error listening to room data:', error);
+      setError(error);
     });
 
-    // Fetch recent purchases using getDocs instead of onSnapshot
-    const fetchRecentPurchases = async () => {
-      try {
-        const purchasesRef = collection(db, 'rooms', roomId, 'purchases');
-        const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
-        
-        const snapshot = await getDocs(purchasesQuery);
-        const purchases = [];
-        
-        snapshot.forEach((doc) => {
-          purchases.push({ id: doc.id, ...doc.data() });
-        });
-        
-        console.log('Fetched purchases:', purchases);
-        setRecentPurchases(purchases);
-      } catch (err) {
-        console.error('Error fetching purchases:', err);
-        setError(err);
-      }
-    };
-
-    fetchRecentPurchases();
+    // Purchases listener
+    const purchasesUnsubscribe = onSnapshot(purchasesQuery, (snapshot) => {
+      const purchases = [];
+      snapshot.forEach((doc) => {
+        const purchaseData = doc.data();
+        console.log('Individual purchase:', purchaseData);
+        purchases.push({ id: doc.id, ...purchaseData });
+      });
+      
+      console.log('All purchases:', purchases);
+      setRecentPurchases(purchases);
+    }, (error) => {
+      console.error('Error listening to purchases:', error);
+      setError(error);
+    });
 
     return () => {
-      unsubscribe();
+      roomUnsubscribe();
+      purchasesUnsubscribe();
     };
   }, [roomId]);
 
