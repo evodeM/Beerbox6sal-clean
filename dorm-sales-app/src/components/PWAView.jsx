@@ -247,32 +247,6 @@ const PWAView = () => {
             Fejl ved hentning af køb: {error.message}
           </Typography>
         )}
-        {room.lastPurchase && (
-          <Box sx={{ 
-            mb: 2, 
-            pb: 2, 
-            borderBottom: '1px solid #e0e0e0'
-          }}>
-            <Typography variant="body2" sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between',
-              color: '#333333'
-            }}>
-              <span>Seneste køb: {room.lastPurchase.productName}</span>
-              <span>Pris: {room.lastPurchase.amount} kr</span>
-            </Typography>
-            {room.lastPurchase.timestamp && (
-              <Typography variant="caption" sx={{ 
-                display: 'block', 
-                mt: 0.5, 
-                color: '#666666' 
-              }}>
-                {formatTimestamp(room.lastPurchase.timestamp)}
-              </Typography>
-            )}
-          </Box>
-        )}
-
         {room.recentPurchases && room.recentPurchases.length > 0 && (
           room.recentPurchases.map((purchase) => (
             <Box key={purchase.id} sx={{ 
@@ -302,7 +276,7 @@ const PWAView = () => {
           ))
         )}
 
-        {!room.lastPurchase && (!room.recentPurchases || room.recentPurchases.length === 0) && (
+        {!room.recentPurchases || room.recentPurchases.length === 0 && (
           <Typography variant="body2" sx={{ color: '#666666' }}>
             Ingen seneste køb
           </Typography>
