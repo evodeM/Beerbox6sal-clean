@@ -9,7 +9,16 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { db } from '../firebase/config';
-import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  onSnapshot, 
+  collection, 
+  query, 
+  orderBy, 
+  limit, 
+  getDocs 
+} from 'firebase/firestore';
 
 const StyledContainer = styled(Container)({
   minHeight: '100vh',
@@ -78,6 +87,7 @@ const PWAView = () => {
   const [room, setRoom] = useState(null);
   const [roomId, setRoomId] = useState(localStorage.getItem('selectedRoom'));
   const [recentPurchases, setRecentPurchases] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!roomId) return;
@@ -90,20 +100,31 @@ const PWAView = () => {
       }
     });
 
-    // Get recent purchases
-    const purchasesRef = collection(db, 'rooms', roomId, 'purchases');
-    const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
-    const purchasesUnsubscribe = onSnapshot(purchasesQuery, (snapshot) => {
-      const purchases = [];
-      snapshot.forEach((doc) => {
-        purchases.push({ id: doc.id, ...doc.data() });
-      });
-      setRecentPurchases(purchases);
-    });
+    // Fetch recent purchases using getDocs instead of onSnapshot
+    const fetchRecentPurchases = async () => {
+      try {
+        const purchasesRef = collection(db, 'rooms', roomId, 'purchases');
+        const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
+        
+        const snapshot = await getDocs(purchasesQuery);
+        const purchases = [];
+        
+        snapshot.forEach((doc) => {
+          purchases.push({ id: doc.id, ...doc.data() });
+        });
+        
+        console.log('Fetched purchases:', purchases);
+        setRecentPurchases(purchases);
+      } catch (err) {
+        console.error('Error fetching purchases:', err);
+        setError(err);
+      }
+    };
+
+    fetchRecentPurchases();
 
     return () => {
       unsubscribe();
-      purchasesUnsubscribe();
     };
   }, [roomId]);
 
@@ -190,6 +211,11 @@ const PWAView = () => {
 
       <Section>
         <SectionTitle>Seneste 5 køb</SectionTitle>
+        {error && (
+          <Typography variant="body2" color="error">
+            Fejl ved hentning af køb: {error.message}
+          </Typography>
+        )}
         {recentPurchases.length > 0 ? (
           recentPurchases.map((purchase) => (
             <Box key={purchase.id} sx={{ 
