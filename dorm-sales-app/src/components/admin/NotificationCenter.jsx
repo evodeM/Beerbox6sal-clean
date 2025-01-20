@@ -71,8 +71,8 @@ const NotificationCenter = () => {
         // Send push notification if we have FCM tokens for this room
         if (tokens[room.id] && tokens[room.id].length > 0) {
           try {
-            // Call your Firebase Cloud Function to send the push notification
-            const response = await fetch('https://your-firebase-function-url/sendPushNotification', {
+            // Call Firebase Cloud Function to send the push notification
+            const response = await fetch('https://us-central1-dorm-sales-app.cloudfunctions.net/sendPushNotification', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
