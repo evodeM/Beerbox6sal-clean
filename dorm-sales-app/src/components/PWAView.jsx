@@ -16,9 +16,9 @@ import {
   collection, 
   query, 
   orderBy, 
-  limit 
+  limit,
+  getDocs
 } from 'firebase/firestore';
-import { getRoom } from '../firebase/services';
 
 const StyledContainer = styled(Container)({
   minHeight: '100vh',
@@ -88,6 +88,7 @@ const PWAView = () => {
   const [roomId, setRoomId] = useState(localStorage.getItem('selectedRoom'));
   const [recentPurchases, setRecentPurchases] = useState([]);
   const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState('');
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
@@ -105,38 +106,47 @@ const PWAView = () => {
     const roomRef = doc(db, 'rooms', roomId);
     const purchasesRef = collection(db, 'rooms', roomId, 'purchases');
 
+    // Fetch purchases directly
+    const fetchPurchases = async () => {
+      try {
+        const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
+        const snapshot = await getDocs(purchasesQuery);
+        
+        const purchases = [];
+        snapshot.forEach((doc) => {
+          const purchaseData = doc.data();
+          purchases.push({ 
+            id: doc.id, 
+            ...purchaseData,
+            timestamp: purchaseData.timestamp
+          });
+        });
+        
+        setDebugInfo(`Purchases fetched: ${purchases.length}`);
+        console.log('Directly fetched purchases:', purchases);
+        setRecentPurchases(purchases);
+      } catch (err) {
+        console.error('Error fetching purchases directly:', err);
+        setError(err);
+        setDebugInfo(`Error fetching purchases: ${err.message}`);
+      }
+    };
+
     // Room data listener
     const unsubscribeRoom = onSnapshot(roomRef, async (doc) => {
       if (doc.exists()) {
         const roomData = doc.data();
         console.log('Room data updated:', roomData);
         
-        // Fetch the latest purchases
-        const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
-        
-        unsubscribePurchases = onSnapshot(purchasesQuery, (snapshot) => {
-          const purchases = [];
-          snapshot.forEach((doc) => {
-            const purchaseData = doc.data();
-            purchases.push({ 
-              id: doc.id, 
-              ...purchaseData,
-              timestamp: purchaseData.timestamp
-            });
-          });
-          
-          console.log('Fetched purchases:', purchases);
-          setRecentPurchases(purchases);
-        }, (error) => {
-          console.error('Error fetching purchases:', error);
-          setError(error);
-        });
+        // Fetch purchases when room data is retrieved
+        await fetchPurchases();
 
         setRoom(roomData);
       }
     }, (error) => {
       console.error('Error listening to room data:', error);
       setError(error);
+      setDebugInfo(`Error with room data: ${error.message}`);
     });
 
     return () => {
@@ -231,6 +241,11 @@ const PWAView = () => {
         {error && (
           <Typography variant="body2" color="error">
             Fejl ved hentning af køb: {error.message}
+          </Typography>
+        )}
+        {debugInfo && (
+          <Typography variant="body2" color="info" sx={{ mb: 2 }}>
+            Debug: {debugInfo}
           </Typography>
         )}
         {recentPurchases.length > 0 ? (
