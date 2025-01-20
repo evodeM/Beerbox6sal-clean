@@ -16,9 +16,9 @@ import {
   collection, 
   query, 
   orderBy, 
-  limit, 
-  getDocs 
+  limit 
 } from 'firebase/firestore';
+import { getRoom } from '../firebase/services';
 
 const StyledContainer = styled(Container)({
   minHeight: '100vh',
@@ -89,44 +89,59 @@ const PWAView = () => {
   const [recentPurchases, setRecentPurchases] = useState([]);
   const [error, setError] = useState(null);
 
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
+    return date.toLocaleString('da-DK', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   useEffect(() => {
     if (!roomId) return;
 
-    // Real-time listeners for room data and purchases
+    let unsubscribePurchases;
     const roomRef = doc(db, 'rooms', roomId);
     const purchasesRef = collection(db, 'rooms', roomId, 'purchases');
-    const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
 
     // Room data listener
-    const roomUnsubscribe = onSnapshot(roomRef, (doc) => {
+    const unsubscribeRoom = onSnapshot(roomRef, async (doc) => {
       if (doc.exists()) {
-        console.log('Room data updated:', doc.data());
-        setRoom(doc.data());
+        const roomData = doc.data();
+        console.log('Room data updated:', roomData);
+        
+        // Fetch the latest purchases
+        const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
+        
+        unsubscribePurchases = onSnapshot(purchasesQuery, (snapshot) => {
+          const purchases = [];
+          snapshot.forEach((doc) => {
+            const purchaseData = doc.data();
+            purchases.push({ 
+              id: doc.id, 
+              ...purchaseData,
+              timestamp: purchaseData.timestamp
+            });
+          });
+          
+          console.log('Fetched purchases:', purchases);
+          setRecentPurchases(purchases);
+        }, (error) => {
+          console.error('Error fetching purchases:', error);
+          setError(error);
+        });
+
+        setRoom(roomData);
       }
     }, (error) => {
       console.error('Error listening to room data:', error);
       setError(error);
     });
 
-    // Purchases listener
-    const purchasesUnsubscribe = onSnapshot(purchasesQuery, (snapshot) => {
-      const purchases = [];
-      snapshot.forEach((doc) => {
-        const purchaseData = doc.data();
-        console.log('Individual purchase:', purchaseData);
-        purchases.push({ id: doc.id, ...purchaseData });
-      });
-      
-      console.log('All purchases:', purchases);
-      setRecentPurchases(purchases);
-    }, (error) => {
-      console.error('Error listening to purchases:', error);
-      setError(error);
-    });
-
     return () => {
-      roomUnsubscribe();
-      purchasesUnsubscribe();
+      unsubscribeRoom();
+      if (unsubscribePurchases) unsubscribePurchases();
     };
   }, [roomId]);
 
@@ -240,7 +255,7 @@ const PWAView = () => {
                   mt: 0.5, 
                   color: '#666666' 
                 }}>
-                  {new Date(purchase.timestamp.toDate()).toLocaleString('da-DK')}
+                  {formatTimestamp(purchase.timestamp)}
                 </Typography>
               )}
             </Box>
