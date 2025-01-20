@@ -8,9 +8,10 @@ import {
   FormControlLabel,
   Switch,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Divider
 } from '@mui/material';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 
 const NotificationCenter = () => {
@@ -21,7 +22,7 @@ const NotificationCenter = () => {
   const [success, setSuccess] = useState('');
 
   const handleSendNotification = async () => {
-    if (!message.trim()) {
+    if (!message.trim() && !isEndOfMonth) {
       setError('Beskeden kan ikke være tom');
       return;
     }
@@ -38,9 +39,23 @@ const NotificationCenter = () => {
         ...doc.data()
       }));
 
-      // Create notification for each room
+      // Get FCM tokens for all users
+      const tokensRef = collection(db, 'fcmTokens');
+      const tokensSnapshot = await getDocs(tokensRef);
+      const tokens = tokensSnapshot.docs.reduce((acc, doc) => {
+        const data = doc.data();
+        if (data.roomId && data.token) {
+          if (!acc[data.roomId]) {
+            acc[data.roomId] = [];
+          }
+          acc[data.roomId].push(data.token);
+        }
+        return acc;
+      }, {});
+
+      // Create notifications in Firestore
       await Promise.all(rooms.map(async (room) => {
-        const notification = {
+        const notificationData = {
           roomId: room.id,
           message: isEndOfMonth 
             ? `Hej ${room.occupantName || 'beboer'}! Din saldo er ${room.balance} kr. Venligst betal inden månedens udgang.`
@@ -50,14 +65,44 @@ const NotificationCenter = () => {
           type: isEndOfMonth ? 'payment' : 'announcement'
         };
 
-        await addDoc(collection(db, 'notifications'), notification);
+        // Save notification to Firestore
+        await addDoc(collection(db, 'notifications'), notificationData);
+
+        // Send push notification if we have FCM tokens for this room
+        if (tokens[room.id] && tokens[room.id].length > 0) {
+          try {
+            // Call your Firebase Cloud Function to send the push notification
+            const response = await fetch('https://your-firebase-function-url/sendPushNotification', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                tokens: tokens[room.id],
+                title: isEndOfMonth ? 'Betalingspåmindelse' : 'Ny Besked',
+                body: notificationData.message,
+                data: {
+                  type: notificationData.type,
+                  roomId: room.id
+                }
+              })
+            });
+
+            if (!response.ok) {
+              throw new Error('Failed to send push notification');
+            }
+          } catch (err) {
+            console.error('Error sending push notification:', err);
+            // Don't throw here, we still want to continue with other notifications
+          }
+        }
       }));
 
       setSuccess('Beskeder sendt til alle beboere');
       setMessage('');
     } catch (err) {
-      setError('Fejl ved afsendelse af beskeder');
       console.error('Error sending notifications:', err);
+      setError('Fejl ved afsendelse af beskeder: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -111,6 +156,13 @@ const NotificationCenter = () => {
           {loading ? <CircularProgress size={24} /> : 'Send Besked'}
         </Button>
       </Box>
+
+      <Divider sx={{ my: 3 }} />
+
+      <Typography variant="body2" color="text.secondary">
+        Push beskeder vil blive sendt til alle beboere der har installeret app'en og accepteret notifikationer.
+        Andre beboere kan se beskederne når de åbner app'en.
+      </Typography>
     </Paper>
   );
 };

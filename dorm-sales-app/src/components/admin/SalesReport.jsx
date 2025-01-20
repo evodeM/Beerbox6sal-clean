@@ -11,9 +11,14 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText
 } from '@mui/material';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, writeBatch, Timestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import DownloadIcon from '@mui/icons-material/Download';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
@@ -23,6 +28,8 @@ const SalesReport = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [reportData, setReportData] = useState(null);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const generateReport = async () => {
     setLoading(true);
@@ -130,32 +137,80 @@ const SalesReport = () => {
   };
 
   const handleMonthlyReset = async () => {
-    if (!window.confirm('Er du sikker på at du vil nulstille alle saldi? Denne handling kan ikke fortrydes.')) {
-      return;
-    }
-
-    setLoading(true);
+    setResetting(true);
     setError('');
+    setSuccess('');
+
     try {
+      const batch = writeBatch(db);
       const roomsRef = collection(db, 'rooms');
       const roomsSnapshot = await getDocs(roomsRef);
 
-      await Promise.all(roomsSnapshot.docs.map(async (roomDoc) => {
+      // Add all room balance resets to the batch
+      roomsSnapshot.docs.forEach((roomDoc) => {
         const roomRef = doc(db, 'rooms', roomDoc.id);
-        await updateDoc(roomRef, {
+        batch.update(roomRef, {
           balance: 0,
           lastReset: Timestamp.now()
         });
-      }));
+      });
+
+      // Create a reset record
+      const resetRef = doc(collection(db, 'resets'));
+      batch.set(resetRef, {
+        timestamp: Timestamp.now(),
+        type: 'monthly',
+        roomCount: roomsSnapshot.size
+      });
+
+      // Commit the batch
+      await batch.commit();
 
       setSuccess('Alle saldi er nulstillet');
+      setResetDialogOpen(false);
+      
+      // Refresh report data if it exists
+      if (reportData) {
+        generateReport();
+      }
     } catch (err) {
-      setError('Fejl ved nulstilling af saldi');
       console.error('Error resetting balances:', err);
+      setError('Fejl ved nulstilling af saldi: ' + err.message);
     } finally {
-      setLoading(false);
+      setResetting(false);
     }
   };
+
+  const ResetConfirmationDialog = () => (
+    <Dialog
+      open={resetDialogOpen}
+      onClose={() => !resetting && setResetDialogOpen(false)}
+    >
+      <DialogTitle>Bekræft Nulstilling</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          Er du sikker på at du vil nulstille alle saldi? Denne handling kan ikke fortrydes.
+          Det anbefales at generere en rapport først.
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button 
+          onClick={() => setResetDialogOpen(false)} 
+          disabled={resetting}
+        >
+          Annuller
+        </Button>
+        <Button
+          onClick={handleMonthlyReset}
+          color="error"
+          disabled={resetting}
+          startIcon={resetting ? <CircularProgress size={20} /> : <RestartAltIcon />}
+        >
+          {resetting ? 'Nulstiller...' : 'Nulstil Alle Saldi'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 
   return (
     <Paper sx={{ p: 3 }}>
@@ -168,8 +223,8 @@ const SalesReport = () => {
             variant="outlined"
             color="error"
             startIcon={<RestartAltIcon />}
-            onClick={handleMonthlyReset}
-            disabled={loading}
+            onClick={() => setResetDialogOpen(true)}
+            disabled={loading || resetting}
             sx={{ mr: 2 }}
           >
             Nulstil Saldi
@@ -177,7 +232,7 @@ const SalesReport = () => {
           <Button
             variant="contained"
             onClick={generateReport}
-            disabled={loading}
+            disabled={loading || resetting}
           >
             Generer Rapport
           </Button>
@@ -236,6 +291,7 @@ const SalesReport = () => {
           </Button>
         </Box>
       )}
+      <ResetConfirmationDialog />
     </Paper>
   );
 };

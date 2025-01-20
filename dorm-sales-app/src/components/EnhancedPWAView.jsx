@@ -10,7 +10,12 @@ import {
   Alert,
   IconButton,
   Button,
-  Skeleton
+  Skeleton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { db } from '../firebase/config';
@@ -23,13 +28,17 @@ import {
   limit,
   getDocs,
   onSnapshot,
-  where
+  where,
+  addDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import { getRoom, initializeDefaultData } from '../firebase/services';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AddToHomeScreenIcon from '@mui/icons-material/AddToHomeScreen';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 const StyledContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
@@ -137,12 +146,7 @@ const InstallPrompt = styled(Paper)(({ theme }) => ({
 }));
 
 const EnhancedPWAView = () => {
-  const [room, setRoom] = useState({ 
-    occupantName: '', 
-    balance: 0,
-    lastPurchase: null,
-    recentPurchases: []
-  });
+  const [room, setRoom] = useState(null);
   const [roomId, setRoomId] = useState(localStorage.getItem('selectedRoom'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -152,6 +156,8 @@ const EnhancedPWAView = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
 
   // Generate room numbers 601-628
   const roomNumbers = Array.from({ length: 28 }, (_, i) => String(601 + i));
@@ -380,6 +386,92 @@ const EnhancedPWAView = () => {
     }
     setShowInstallPrompt(false);
   };
+
+  // Handle push notification setup
+  const setupPushNotifications = async (roomId) => {
+    try {
+      // Check if notifications are supported
+      if (!('Notification' in window)) {
+        console.log('This browser does not support notifications');
+        return;
+      }
+
+      // If permission is not granted and not denied, show prompt
+      if (Notification.permission === 'default') {
+        setShowNotificationPrompt(true);
+        return;
+      }
+
+      if (Notification.permission === 'granted') {
+        await registerForPushNotifications(roomId);
+      }
+    } catch (error) {
+      console.error('Error setting up push notifications:', error);
+    }
+  };
+
+  // Register for push notifications
+  const registerForPushNotifications = async (roomId) => {
+    try {
+      const messaging = getMessaging();
+      
+      // Get FCM token
+      const currentToken = await getToken(messaging, {
+        vapidKey: 'BK5JiQu6vhdhV8bzrHp6W5Kn2h-fkrYvudQKLeOHWWhui4WzYFG-Oq-UJmc4gDNuosGR3b9ntehs88GavTx9Udc'
+      });
+
+      if (currentToken) {
+        // Save the token to Firestore
+        const tokensRef = collection(db, 'fcmTokens');
+        const q = query(tokensRef, where('roomId', '==', roomId));
+        const querySnapshot = await getDocs(q);
+        
+        // Remove old tokens for this room
+        querySnapshot.docs.forEach(async (doc) => {
+          await deleteDoc(doc.ref);
+        });
+
+        // Add new token
+        await addDoc(tokensRef, {
+          token: currentToken,
+          roomId: roomId,
+          timestamp: new Date()
+        });
+
+        // Set up message handler
+        onMessage(messaging, (payload) => {
+          // Show notification even when app is in foreground
+          new Notification(payload.notification.title, {
+            body: payload.notification.body,
+            icon: '/icon-192x192.png'
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Error registering for push notifications:', error);
+    }
+  };
+
+  // Handle notification permission request
+  const handleNotificationPermission = async () => {
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      setShowNotificationPrompt(false);
+
+      if (permission === 'granted' && room?.id) {
+        await registerForPushNotifications(room.id);
+      }
+    } catch (error) {
+      console.error('Error requesting notification permission:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (room?.id) {
+      setupPushNotifications(room.id);
+    }
+  }, [room?.id]);
 
   const LoadingSkeleton = () => (
     <Box sx={{ width: '100%', p: 2 }}>
@@ -669,6 +761,28 @@ const EnhancedPWAView = () => {
           </Box>
         </InstallPrompt>
       )}
+
+      {/* Notification Permission Dialog */}
+      <Dialog
+        open={showNotificationPrompt}
+        onClose={() => setShowNotificationPrompt(false)}
+      >
+        <DialogTitle>Tillad Beskeder</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Vil du modtage beskeder om nye meddelelser og betalingspåmindelser?
+            Du kan altid ændre dette senere i din browsers indstillinger.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowNotificationPrompt(false)}>
+            Ikke nu
+          </Button>
+          <Button onClick={handleNotificationPermission} variant="contained">
+            Tillad Beskeder
+          </Button>
+        </DialogActions>
+      </Dialog>
     </StyledContainer>
   );
 };
