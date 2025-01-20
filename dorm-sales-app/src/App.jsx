@@ -13,17 +13,58 @@ const DeviceRedirect = () => {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      navigate('/enhanced-mobile');
-    } else {
-      navigate('/');
-    }
-    setIsChecking(false);
+    const checkDevice = () => {
+      // Multiple checks for mobile devices
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const isMobileUserAgent = /iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      const isMobileWidth = window.innerWidth <= 768;
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+      console.log('Device Detection:', {
+        userAgent,
+        isMobileUserAgent,
+        isMobileWidth,
+        isTouchDevice,
+        windowWidth: window.innerWidth,
+        touchPoints: navigator.maxTouchPoints
+      });
+
+      // Consider a device mobile if it matches any mobile criteria
+      const isMobile = isMobileUserAgent || (isMobileWidth && isTouchDevice);
+
+      console.log('Final device decision:', isMobile ? 'Mobile' : 'Desktop');
+
+      if (isMobile) {
+        console.log('Redirecting to mobile view...');
+        navigate('/enhanced-mobile', { replace: true });
+      } else {
+        console.log('Redirecting to desktop view...');
+        navigate('/', { replace: true });
+      }
+      setIsChecking(false);
+    };
+
+    checkDevice();
   }, [navigate]);
 
   if (isChecking) {
-    return <div>Loading...</div>;
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        flexDirection: 'column',
+        gap: '1rem',
+        padding: '1rem',
+        textAlign: 'center'
+      }}>
+        <div>Indlæser...</div>
+        <div style={{ fontSize: '0.875rem', color: '#666' }}>
+          Omdirigerer til den rigtige visning...
+        </div>
+      </div>
+    );
   }
 
   return null;
