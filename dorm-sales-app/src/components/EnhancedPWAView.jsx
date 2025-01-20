@@ -43,7 +43,7 @@ const StyledContainer = styled(Box)(({ theme }) => ({
 
 const Header = styled(Box)(({ theme }) => ({
   position: 'relative',
-  padding: '24px 16px',
+  padding: '48px 16px 24px 16px',
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
@@ -52,6 +52,7 @@ const Header = styled(Box)(({ theme }) => ({
   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
   marginBottom: 24,
   width: '100%',
+  paddingTop: 'calc(env(safe-area-inset-top) + 48px)',
   '&::after': {
     content: '""',
     position: 'absolute',
@@ -459,7 +460,8 @@ const EnhancedPWAView = () => {
           alignItems: 'center',
           position: 'relative',
           zIndex: 1,
-          width: '100%'
+          width: '100%',
+          mt: 'env(safe-area-inset-top)'
         }}>
           <Typography 
             variant="subtitle1" 
