@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import TabletLayout from './components/tablet/TabletLayout';
 import RoomGrid from './components/tablet/RoomGrid';
 import RoomPurchase from './components/tablet/RoomPurchase';
@@ -8,7 +8,7 @@ import './App.css'
 
 function App() {
   return (
-    <Router basename="/Beerbox6sal-clean">
+    <Router>
       <Routes>
         <Route path="/PWAVIEW" element={<PWAView />} />
         <Route path="/" element={<TabletLayout />}>

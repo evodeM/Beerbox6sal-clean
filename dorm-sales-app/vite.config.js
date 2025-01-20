@@ -7,7 +7,7 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   return {
     plugins: [react()],
-    base: '/Beerbox6sal-clean/',
+    base: '',
     define: {
       'process.env': env
     },
