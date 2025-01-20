@@ -10,6 +10,17 @@ export default defineConfig(({ command, mode }) => {
     base: '/Beerbox6sal-clean/',
     define: {
       'process.env': env
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
+          }
+        }
+      }
     }
   }
 })
