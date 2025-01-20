@@ -11,14 +11,9 @@ import { styled } from '@mui/material/styles';
 import { db } from '../firebase/config';
 import { 
   doc, 
-  getDoc, 
-  onSnapshot, 
-  collection, 
-  query, 
-  orderBy, 
-  limit,
-  getDocs
+  getDoc 
 } from 'firebase/firestore';
+import { getRoom, getProducts } from '../firebase/services';
 
 const StyledContainer = styled(Container)({
   minHeight: '100vh',
@@ -84,11 +79,11 @@ const SectionTitle = styled(Typography)({
 });
 
 const PWAView = () => {
-  const [room, setRoom] = useState(null);
+  const [room, setRoom] = useState({ occupantName: '', balance: 0 });
   const [roomId, setRoomId] = useState(localStorage.getItem('selectedRoom'));
   const [recentPurchases, setRecentPurchases] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [debugInfo, setDebugInfo] = useState('');
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
@@ -100,59 +95,43 @@ const PWAView = () => {
   };
 
   useEffect(() => {
-    if (!roomId) return;
+    const loadData = async () => {
+      if (!roomId) return;
 
-    let unsubscribePurchases;
-    const roomRef = doc(db, 'rooms', roomId);
-    const purchasesRef = collection(db, 'rooms', roomId, 'purchases');
-
-    // Fetch purchases directly
-    const fetchPurchases = async () => {
       try {
-        const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
-        const snapshot = await getDocs(purchasesQuery);
+        setLoading(true);
+        console.log('Loading data for room:', roomId);
+
+        const roomData = await getRoom(roomId);
+        console.log('Room data loaded:', roomData);
+
+        setRoom(roomData || { occupantName: '', balance: 0 });
         
-        const purchases = [];
-        snapshot.forEach((doc) => {
-          const purchaseData = doc.data();
-          purchases.push({ 
-            id: doc.id, 
-            ...purchaseData,
-            timestamp: purchaseData.timestamp
-          });
+        // Fetch recent purchases
+        const purchasesQuery = {
+          roomId,
+          limit: 5
+        };
+        const purchasesSnapshot = await fetch('/api/recentPurchases', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(purchasesQuery)
         });
         
-        setDebugInfo(`Purchases fetched: ${purchases.length}`);
-        console.log('Directly fetched purchases:', purchases);
+        const purchases = await purchasesSnapshot.json();
+        console.log('Fetched purchases:', purchases);
         setRecentPurchases(purchases);
-      } catch (err) {
-        console.error('Error fetching purchases directly:', err);
-        setError(err);
-        setDebugInfo(`Error fetching purchases: ${err.message}`);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setError(error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    // Room data listener
-    const unsubscribeRoom = onSnapshot(roomRef, async (doc) => {
-      if (doc.exists()) {
-        const roomData = doc.data();
-        console.log('Room data updated:', roomData);
-        
-        // Fetch purchases when room data is retrieved
-        await fetchPurchases();
-
-        setRoom(roomData);
-      }
-    }, (error) => {
-      console.error('Error listening to room data:', error);
-      setError(error);
-      setDebugInfo(`Error with room data: ${error.message}`);
-    });
-
-    return () => {
-      unsubscribeRoom();
-      if (unsubscribePurchases) unsubscribePurchases();
-    };
+    loadData();
   }, [roomId]);
 
   const handleRoomSelect = (event) => {
@@ -210,6 +189,16 @@ const PWAView = () => {
     );
   }
 
+  if (loading) {
+    return (
+      <StyledContainer>
+        <Typography variant="body1" sx={{ textAlign: 'center', mt: 4 }}>
+          Indlæser...
+        </Typography>
+      </StyledContainer>
+    );
+  }
+
   return (
     <StyledContainer>
       <Header>
@@ -241,11 +230,6 @@ const PWAView = () => {
         {error && (
           <Typography variant="body2" color="error">
             Fejl ved hentning af køb: {error.message}
-          </Typography>
-        )}
-        {debugInfo && (
-          <Typography variant="body2" color="info" sx={{ mb: 2 }}>
-            Debug: {debugInfo}
           </Typography>
         )}
         {recentPurchases.length > 0 ? (
