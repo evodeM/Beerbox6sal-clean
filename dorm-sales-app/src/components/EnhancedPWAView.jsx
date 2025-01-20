@@ -30,18 +30,15 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AddToHomeScreenIcon from '@mui/icons-material/AddToHomeScreen';
 import CampaignIcon from '@mui/icons-material/Campaign';
 
-const StyledContainer = styled(Container)(({ theme }) => ({
+const StyledContainer = styled(Box)(({ theme }) => ({
   minHeight: '100vh',
-  backgroundColor: '#ffffff',
-  color: '#333333',
-  display: 'flex',
-  flexDirection: 'column',
-  padding: '16px',
-  gap: '24px',
-  '@media (max-width: 600px)': {
-    padding: '12px',
-    gap: '16px',
-  },
+  width: '100%',
+  maxWidth: '100%',
+  margin: 0,
+  padding: 0,
+  backgroundColor: '#f5f6fa',
+  overflowX: 'hidden',
+  position: 'relative'
 }));
 
 const Header = styled(Box)(({ theme }) => ({
@@ -54,6 +51,7 @@ const Header = styled(Box)(({ theme }) => ({
   borderRadius: '0 0 24px 24px',
   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
   marginBottom: 24,
+  width: '100%',
   '&::after': {
     content: '""',
     position: 'absolute',
@@ -66,6 +64,13 @@ const Header = styled(Box)(({ theme }) => ({
     borderRadius: '2px',
     opacity: 0.7
   }
+}));
+
+const ContentWrapper = styled(Box)(({ theme }) => ({
+  padding: '0 16px',
+  width: '100%',
+  maxWidth: '100%',
+  margin: '0 auto'
 }));
 
 const BalanceCard = styled(Paper)(({ theme }) => ({
@@ -453,7 +458,8 @@ const EnhancedPWAView = () => {
           flexDirection: 'column', 
           alignItems: 'center',
           position: 'relative',
-          zIndex: 1
+          zIndex: 1,
+          width: '100%'
         }}>
           <Typography 
             variant="subtitle1" 
@@ -501,80 +507,82 @@ const EnhancedPWAView = () => {
         </RefreshButton>
       </Header>
 
-      <BalanceCard elevation={3} onClick={handlePayment}>
-        <Typography variant="h6" sx={{ mb: 1, color: '#333' }}>
-          Køb i alt
-        </Typography>
-        <Typography variant="h4" sx={{ mb: 2, color: room.balance > 0 ? '#e74c3c' : '#2ecc71' }}>
-          {room.balance?.toFixed(2)} kr
-        </Typography>
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={handlePayment}
-          sx={{
-            backgroundColor: '#5A78FF',
-            '&:hover': {
-              backgroundColor: '#4A61D1'
-            },
-            py: 1.5,
-            borderRadius: 2,
-            textTransform: 'none',
-            fontSize: '1.1rem'
-          }}
-        >
-          Betal med MobilePay
-        </Button>
-      </BalanceCard>
-
-      <NotificationCard elevation={0}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-          <CampaignIcon sx={{ color: '#5A78FF', mt: 0.5 }} />
-          <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5, color: '#2c3e50' }}>
-              Beskeder
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#666' }}>
-              Ingen nye beskeder
-            </Typography>
-          </Box>
-        </Box>
-      </NotificationCard>
-
-      <Box sx={{ mt: 2, mb: 2 }}>
-        <Typography variant="subtitle1" sx={{ mb: 1, color: '#666', fontWeight: 500 }}>
-          Seneste køb
-        </Typography>
-        {room.recentPurchases.map((purchase) => (
-          <PurchaseHistoryItem 
-            key={purchase.id}
-            sx={{ 
-              py: 1, 
-              px: 2,
-              mb: 0.5,
-              backgroundColor: '#f8f9fa',
-              borderRadius: 1
+      <ContentWrapper>
+        <BalanceCard elevation={3} onClick={handlePayment}>
+          <Typography variant="h6" sx={{ mb: 1, color: '#333' }}>
+            Køb i alt
+          </Typography>
+          <Typography variant="h4" sx={{ mb: 2, color: room.balance > 0 ? '#e74c3c' : '#2ecc71' }}>
+            {room.balance?.toFixed(2)} kr
+          </Typography>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handlePayment}
+            sx={{
+              backgroundColor: '#5A78FF',
+              '&:hover': {
+                backgroundColor: '#4A61D1'
+              },
+              py: 1.5,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontSize: '1.1rem'
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                {purchase.productName}
+            Betal med MobilePay
+          </Button>
+        </BalanceCard>
+
+        <NotificationCard elevation={0}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+            <CampaignIcon sx={{ color: '#5A78FF', mt: 0.5 }} />
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5, color: '#2c3e50' }}>
+                Beskeder
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatTimestamp(purchase.timestamp)}
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                Ingen nye beskeder
               </Typography>
             </Box>
-            <Typography variant="body2" color="primary" sx={{ fontWeight: 500 }}>
-              {purchase.amount.toFixed(2)} kr
-            </Typography>
-          </PurchaseHistoryItem>
-        ))}
-        {room.recentPurchases.length === 0 && (
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
-            Ingen køb endnu
+          </Box>
+        </NotificationCard>
+
+        <Box sx={{ mt: 2, mb: 2 }}>
+          <Typography variant="subtitle1" sx={{ mb: 1, color: '#666', fontWeight: 500 }}>
+            Seneste køb
           </Typography>
-        )}
-      </Box>
+          {room.recentPurchases.map((purchase) => (
+            <PurchaseHistoryItem 
+              key={purchase.id}
+              sx={{ 
+                py: 1, 
+                px: 2,
+                mb: 0.5,
+                backgroundColor: '#f8f9ff',
+                borderRadius: 1
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {purchase.productName}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {formatTimestamp(purchase.timestamp)}
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="primary" sx={{ fontWeight: 500 }}>
+                {purchase.amount.toFixed(2)} kr
+              </Typography>
+            </PurchaseHistoryItem>
+          ))}
+          {room.recentPurchases.length === 0 && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
+              Ingen køb endnu
+            </Typography>
+          )}
+        </Box>
+      </ContentWrapper>
 
       {showInstallPrompt && (
         <InstallPrompt elevation={3}>
@@ -639,20 +647,6 @@ const EnhancedPWAView = () => {
           </Box>
         </InstallPrompt>
       )}
-
-      <Snackbar
-        open={notification.open}
-        autoHideDuration={3000}
-        onClose={() => setNotification({ ...notification, open: false })}
-      >
-        <Alert 
-          onClose={() => setNotification({ ...notification, open: false })} 
-          severity={notification.severity}
-          sx={{ width: '100%' }}
-        >
-          {notification.message}
-        </Alert>
-      </Snackbar>
     </StyledContainer>
   );
 };
