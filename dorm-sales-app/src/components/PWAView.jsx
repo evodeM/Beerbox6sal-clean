@@ -13,8 +13,8 @@ import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from 'fire
 
 const StyledContainer = styled(Container)({
   minHeight: '100vh',
-  backgroundColor: '#1a1a1a',
-  color: 'white',
+  backgroundColor: '#ffffff',
+  color: '#333333',
   display: 'flex',
   flexDirection: 'column',
   padding: '16px',
@@ -25,13 +25,14 @@ const Header = styled(Box)({
   display: 'flex',
   justifyContent: 'space-between',
   alignItems: 'center',
-  padding: '8px 0'
+  padding: '8px 0',
+  borderBottom: '1px solid #e0e0e0'
 });
 
 const OccupantInput = styled(TextField)({
   '& .MuiInputBase-input': {
-    color: '#9e9e9e',
-    backgroundColor: '#333333',
+    color: '#333333',
+    backgroundColor: '#f0f0f0',
     borderRadius: '4px',
     padding: '8px 12px'
   },
@@ -58,16 +59,19 @@ const PayButton = styled(Button)({
 });
 
 const Section = styled(Paper)({
-  backgroundColor: '#2a2a2a',
+  backgroundColor: '#f5f5f5',
   padding: '16px',
   borderRadius: '8px',
-  marginBottom: '16px'
+  marginBottom: '16px',
+  boxShadow: 'none',
+  border: '1px solid #e0e0e0'
 });
 
 const SectionTitle = styled(Typography)({
   fontSize: '18px',
   fontWeight: 500,
-  marginBottom: '12px'
+  marginBottom: '12px',
+  color: '#333333'
 });
 
 const PWAView = () => {
@@ -116,7 +120,7 @@ const PWAView = () => {
     if (configDoc.exists()) {
       const { mobilePayPhoneNumber } = configDoc.data();
       const amount = room?.balance || 0;
-      window.location.href = `mobilepay://send?phone=${mobilePayPhoneNumber}&amount=${amount}&comment=Room ${roomId}`;
+      window.location.href = `mobilepay://send?phone=${mobilePayPhoneNumber}&amount=${amount}&comment=Værelse ${roomId}`;
     }
   };
 
@@ -130,8 +134,8 @@ const PWAView = () => {
           <Typography variant="h5" gutterBottom>
             Velkommen
           </Typography>
-          <Typography gutterBottom sx={{ mb: 3 }}>
-            Vælg dit værelse
+          <Typography gutterBottom sx={{ mb: 3, color: '#666666' }}>
+            Vælg dit værelse for at fortsætte
           </Typography>
           <TextField
             select
@@ -142,10 +146,10 @@ const PWAView = () => {
               native: true
             }}
             sx={{ 
-              backgroundColor: '#ffffff1a',
+              backgroundColor: '#f0f0f0',
               borderRadius: '8px',
-              '& .MuiInputBase-input': { color: 'white' },
-              '& .MuiInputLabel-root': { color: 'white' }
+              '& .MuiInputBase-input': { color: '#333333' },
+              '& .MuiInputLabel-root': { color: '#666666' }
             }}
           >
             <option value="">Vælg værelse</option>
@@ -161,18 +165,18 @@ const PWAView = () => {
   return (
     <StyledContainer>
       <Header>
-        <Typography variant="h6">Room {roomId}</Typography>
+        <Typography variant="h6" sx={{ color: '#333333' }}>Værelse {roomId}</Typography>
         <OccupantInput
           variant="standard"
-          placeholder="Occupant Name"
+          placeholder="Beboernavn"
           value={room?.occupantName || ''}
           disabled
         />
       </Header>
 
       <Box sx={{ textAlign: 'center', my: 4 }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>Total Balance Owed:</Typography>
-        <Typography variant="h4">${room?.balance?.toFixed(2) || '0.00'}</Typography>
+        <Typography variant="body1" sx={{ mb: 1, color: '#666666' }}>Samlet saldo:</Typography>
+        <Typography variant="h4" sx={{ color: '#333333' }}>{room?.balance?.toFixed(2) || '0.00'} kr</Typography>
       </Box>
 
       <PayButton
@@ -181,30 +185,49 @@ const PWAView = () => {
         onClick={handleMobilePayClick}
         disabled={!room?.balance}
       >
-        Pay with Mobilepay
+        Betal med MobilePay
       </PayButton>
 
       <Section>
-        <SectionTitle>Recent purchases</SectionTitle>
-        {recentPurchases.map((purchase) => (
-          <Box key={purchase.id} sx={{ mb: 1 }}>
-            <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span>Product: {purchase.productName}</span>
-              <span>Price: ${purchase.amount}</span>
-            </Typography>
-            {purchase.timestamp && (
-              <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                Timestamp: {new Date(purchase.timestamp.toDate()).toLocaleString()}
+        <SectionTitle>Seneste 5 køb</SectionTitle>
+        {recentPurchases.length > 0 ? (
+          recentPurchases.map((purchase) => (
+            <Box key={purchase.id} sx={{ 
+              mb: 2, 
+              pb: 2, 
+              borderBottom: '1px solid #e0e0e0',
+              '&:last-child': { borderBottom: 'none' }
+            }}>
+              <Typography variant="body2" sx={{ 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                color: '#333333'
+              }}>
+                <span>Produkt: {purchase.productName}</span>
+                <span>Pris: {purchase.amount} kr</span>
               </Typography>
-            )}
-          </Box>
-        ))}
+              {purchase.timestamp && (
+                <Typography variant="caption" sx={{ 
+                  display: 'block', 
+                  mt: 0.5, 
+                  color: '#666666' 
+                }}>
+                  {new Date(purchase.timestamp.toDate()).toLocaleString('da-DK')}
+                </Typography>
+              )}
+            </Box>
+          ))
+        ) : (
+          <Typography variant="body2" sx={{ color: '#666666' }}>
+            Ingen seneste køb
+          </Typography>
+        )}
       </Section>
 
       <Section>
-        <SectionTitle>Påmindelser for alle beboere</SectionTitle>
-        <Typography variant="body2">
-          Husk køkkenmøde - Tors d. 15/juni
+        <SectionTitle>Påmindelser</SectionTitle>
+        <Typography variant="body2" sx={{ color: '#333333' }}>
+          Husk køkkenmøde - Torsdag d. 15. juni
         </Typography>
       </Section>
     </StyledContainer>
