@@ -56,5 +56,5 @@
 - Continuous deployment from tagged versions
 
 ## Contact
-- Primary Developer: [Your Name]
+- Primary Developer: [Evode]
 - Project Repository: https://github.com/evodeM/Beerbox6sal-clean

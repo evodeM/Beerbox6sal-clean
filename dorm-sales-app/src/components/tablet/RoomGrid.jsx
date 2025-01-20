@@ -7,10 +7,12 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 const RoomGrid = () => {
   const navigate = useNavigate();
-  const { data: rooms } = useFirestore('rooms');
+  const { data: rooms, loading } = useFirestore('rooms', [], { realtime: false });
 
   // Find room with highest balance
-  const maxBalance = Math.max(...rooms.map(room => room.balance || 0));
+  const maxBalance = useMemo(() => {
+    return Math.max(...rooms.map(room => room.balance || 0));
+  }, [rooms]);
 
   // Memoize room data to prevent unnecessary re-renders
   const roomsMap = useMemo(() => {
