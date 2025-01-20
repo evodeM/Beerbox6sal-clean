@@ -10,12 +10,12 @@ import {
   Alert,
   IconButton,
   Button,
-  Skeleton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions
+  Card,
+  List,
+  ListItem,
+  ListItemText,
+  Chip,
+  Divider
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { db } from '../firebase/config';
@@ -29,8 +29,7 @@ import {
   getDocs,
   onSnapshot,
   where,
-  addDoc,
-  deleteDoc
+  writeBatch
 } from 'firebase/firestore';
 import { getRoom, initializeDefaultData } from '../firebase/services';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
@@ -38,6 +37,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import AddToHomeScreenIcon from '@mui/icons-material/AddToHomeScreen';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 
 const StyledContainer = styled(Box)(({ theme }) => ({
@@ -100,13 +100,16 @@ const BalanceCard = styled(Paper)(({ theme }) => ({
   },
 }));
 
-const NotificationCard = styled(Paper)(({ theme }) => ({
-  padding: '16px',
-  marginTop: '16px',
-  marginBottom: '16px',
-  borderRadius: '12px',
-  backgroundColor: '#F8F9FF',
-  border: '1px solid rgba(90, 120, 255, 0.1)',
+const NotificationCard = styled(Card)(({ theme }) => ({
+  marginBottom: theme.spacing(2),
+  padding: theme.spacing(2),
+  backgroundColor: '#fff',
+  borderRadius: theme.spacing(2),
+  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+  transition: 'transform 0.2s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+  }
 }));
 
 const PurchaseHistoryItem = styled(Paper)(({ theme }) => ({
@@ -156,6 +159,7 @@ const EnhancedPWAView = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isIOS, setIsIOS] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [showNotificationPrompt, setShowNotificationPrompt] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState(Notification.permission);
 
@@ -387,110 +391,103 @@ const EnhancedPWAView = () => {
     setShowInstallPrompt(false);
   };
 
-  // Handle push notification setup
-  const setupPushNotifications = async (roomId) => {
-    try {
-      // Check if notifications are supported
-      if (!('Notification' in window)) {
-        console.log('This browser does not support notifications');
-        return;
-      }
+  // Setup notifications
+  const setupNotifications = async (roomId) => {
+    if (!roomId) return;
 
-      // If permission is not granted and not denied, show prompt
-      if (Notification.permission === 'default') {
-        setShowNotificationPrompt(true);
-        return;
-      }
+    // Listen for notifications in Firestore
+    const notificationsRef = collection(db, 'notifications');
+    const q = query(
+      notificationsRef,
+      where('roomId', '==', roomId),
+      orderBy('timestamp', 'desc'),
+      limit(10)
+    );
 
-      if (Notification.permission === 'granted') {
-        await registerForPushNotifications(roomId);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newNotifications = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setNotifications(newNotifications);
+      
+      // Count unread notifications
+      const unread = newNotifications.filter(n => !n.read).length;
+      setUnreadCount(unread);
+      
+      // Update app badge
+      if ('setAppBadge' in navigator) {
+        if (unread > 0) {
+          navigator.setAppBadge(unread).catch(() => {});
+        } else {
+          navigator.clearAppBadge().catch(() => {});
+        }
       }
-    } catch (error) {
-      console.error('Error setting up push notifications:', error);
+    });
+
+    // Setup push notifications for Android
+    if (!isIOS) {
+      try {
+        const messaging = getMessaging();
+        const currentToken = await getToken(messaging, {
+          vapidKey: 'BK5JiQu6vhdhV8bzrHp6W5Kn2h-fkrYvudQKLeOHWWhui4WzYFG-Oq-UJmc4gDNuosGR3b9ntehs88GavTx9Udc'
+        });
+
+        if (currentToken) {
+          // Save token to Firestore
+          const tokenRef = doc(collection(db, 'fcmTokens'));
+          await setDoc(tokenRef, {
+            token: currentToken,
+            roomId: roomId,
+            timestamp: new Date()
+          });
+
+          // Handle foreground messages
+          onMessage(messaging, (payload) => {
+            new Notification(payload.notification.title, {
+              body: payload.notification.body,
+              icon: '/icon-192x192.png'
+            });
+          });
+        }
+      } catch (error) {
+        console.error('Error setting up push notifications:', error);
+      }
     }
+
+    return unsubscribe;
   };
 
-  // Register for push notifications
-  const registerForPushNotifications = async (roomId) => {
-    try {
-      const messaging = getMessaging();
-      
-      // Get FCM token
-      const currentToken = await getToken(messaging, {
-        vapidKey: 'BK5JiQu6vhdhV8bzrHp6W5Kn2h-fkrYvudQKLeOHWWhui4WzYFG-Oq-UJmc4gDNuosGR3b9ntehs88GavTx9Udc'
+  // Mark notifications as read
+  const markAsRead = async () => {
+    if (!notifications.length) return;
+
+    const batch = writeBatch(db);
+    notifications
+      .filter(n => !n.read)
+      .forEach(notification => {
+        const ref = doc(db, 'notifications', notification.id);
+        batch.update(ref, { read: true });
       });
 
-      if (currentToken) {
-        // Save the token to Firestore
-        const tokensRef = collection(db, 'fcmTokens');
-        const q = query(tokensRef, where('roomId', '==', roomId));
-        const querySnapshot = await getDocs(q);
-        
-        // Remove old tokens for this room
-        querySnapshot.docs.forEach(async (doc) => {
-          await deleteDoc(doc.ref);
-        });
-
-        // Add new token
-        await addDoc(tokensRef, {
-          token: currentToken,
-          roomId: roomId,
-          timestamp: new Date()
-        });
-
-        // Set up message handler
-        onMessage(messaging, (payload) => {
-          // Show notification even when app is in foreground
-          new Notification(payload.notification.title, {
-            body: payload.notification.body,
-            icon: '/icon-192x192.png'
-          });
-        });
-      }
-    } catch (error) {
-      console.error('Error registering for push notifications:', error);
-    }
-  };
-
-  // Handle notification permission request
-  const handleNotificationPermission = async () => {
     try {
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-      setShowNotificationPrompt(false);
-
-      if (permission === 'granted' && room?.id) {
-        await registerForPushNotifications(room.id);
+      await batch.commit();
+      if ('clearAppBadge' in navigator) {
+        navigator.clearAppBadge().catch(() => {});
       }
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      console.error('Error marking notifications as read:', error);
     }
   };
 
   useEffect(() => {
     if (room?.id) {
-      setupPushNotifications(room.id);
+      const unsubscribe = setupNotifications(room.id);
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
     }
   }, [room?.id]);
-
-  const LoadingSkeleton = () => (
-    <Box sx={{ width: '100%', p: 2 }}>
-      <Box sx={{ mb: 3, textAlign: 'center' }}>
-        <Skeleton variant="text" width={120} height={24} sx={{ mb: 1, mx: 'auto' }} />
-        <Skeleton variant="text" width={80} height={32} sx={{ mx: 'auto' }} />
-      </Box>
-      
-      <Skeleton variant="rounded" height={140} sx={{ mb: 3, borderRadius: 3 }} />
-      <Skeleton variant="rounded" height={80} sx={{ mb: 3, borderRadius: 2 }} />
-      
-      <Box sx={{ mb: 2 }}>
-        <Skeleton variant="text" width={140} height={24} sx={{ mb: 2 }} />
-        {[1, 2, 3].map((i) => (
-          <Skeleton key={i} variant="rounded" height={60} sx={{ mb: 1, borderRadius: 1 }} />
-        ))}
-      </Box>
-    </Box>
-  );
 
   if (!roomId) {
     return (
@@ -544,7 +541,34 @@ const EnhancedPWAView = () => {
     return (
       <StyledContainer>
         <Header>
-          <LoadingSkeleton />
+          <Box sx={{ width: '100%', p: 2 }}>
+            <Box sx={{ mb: 3, textAlign: 'center' }}>
+              <Typography variant="h4" sx={{ mb: 1, color: '#333' }}>
+                Køb i alt
+              </Typography>
+              <Typography variant="h4" sx={{ mb: 2, color: '#2ecc71' }}>
+                0 kr
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <CampaignIcon sx={{ color: '#5A78FF', mr: 1 }} />
+                <Typography variant="h6">
+                  Beskeder
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ mt: 2, mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ mb: 1, color: '#666', fontWeight: 500 }}>
+                Seneste køb
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', textAlign: 'center' }}>
+                Ingen køb endnu
+              </Typography>
+            </Box>
+          </Box>
         </Header>
       </StyledContainer>
     );
@@ -649,17 +673,68 @@ const EnhancedPWAView = () => {
         </BalanceCard>
 
         <NotificationCard elevation={0}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-            <CampaignIcon sx={{ color: '#5A78FF', mt: 0.5 }} />
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 500, mb: 0.5, color: '#2c3e50' }}>
-                Beskeder
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                Ingen nye beskeder
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <CampaignIcon sx={{ color: '#5A78FF', mr: 1 }} />
+              <Typography variant="h6">
+                Beskeder {unreadCount > 0 && `(${unreadCount})`}
               </Typography>
             </Box>
+            {unreadCount > 0 && (
+              <Button
+                size="small"
+                startIcon={<CheckCircleIcon />}
+                onClick={markAsRead}
+              >
+                Marker som læst
+              </Button>
+            )}
           </Box>
+
+          {notifications.length > 0 ? (
+            <List sx={{ p: 0 }}>
+              {notifications.map((notification, index) => (
+                <React.Fragment key={notification.id}>
+                  {index > 0 && <Divider sx={{ my: 1 }} />}
+                  <ListItem sx={{ px: 0, py: 1 }}>
+                    <ListItemText
+                      primary={
+                        <Typography 
+                          variant="body1" 
+                          sx={{ 
+                            fontWeight: !notification.read ? 500 : 400,
+                            color: !notification.read ? 'text.primary' : 'text.secondary'
+                          }}
+                        >
+                          {notification.message}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(notification.timestamp.toDate()).toLocaleString('da-DK')}
+                          </Typography>
+                          {notification.type === 'payment' && (
+                            <Chip 
+                              size="small" 
+                              label="Betaling" 
+                              color="primary" 
+                              variant="outlined"
+                              sx={{ height: 20 }}
+                            />
+                          )}
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                </React.Fragment>
+              ))}
+            </List>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Ingen beskeder at vise
+            </Typography>
+          )}
         </NotificationCard>
 
         <Box sx={{ mt: 2, mb: 2 }}>
@@ -778,7 +853,7 @@ const EnhancedPWAView = () => {
           <Button onClick={() => setShowNotificationPrompt(false)}>
             Ikke nu
           </Button>
-          <Button onClick={handleNotificationPermission} variant="contained">
+          <Button onClick={() => setShowNotificationPrompt(false)} variant="contained">
             Tillad Beskeder
           </Button>
         </DialogActions>
