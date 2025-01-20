@@ -2,7 +2,7 @@
   "name": "dorm-sales-app",
   "private": true,
   "version": "1.1.0",
-  "homepage": "https://evodem.github.io/Beerbox6sal",
+  "homepage": "https://evodem.github.io/Beerbox6sal-clean",
   "type": "module",
   "scripts": {
     "dev": "vite",
