@@ -10,6 +10,7 @@ import {
   Alert,
   IconButton,
   Button,
+  Skeleton
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { db } from '../firebase/config';
@@ -380,6 +381,25 @@ const EnhancedPWAView = () => {
     setShowInstallPrompt(false);
   };
 
+  const LoadingSkeleton = () => (
+    <Box sx={{ width: '100%', p: 2 }}>
+      <Box sx={{ mb: 3, textAlign: 'center' }}>
+        <Skeleton variant="text" width={120} height={24} sx={{ mb: 1, mx: 'auto' }} />
+        <Skeleton variant="text" width={80} height={32} sx={{ mx: 'auto' }} />
+      </Box>
+      
+      <Skeleton variant="rounded" height={140} sx={{ mb: 3, borderRadius: 3 }} />
+      <Skeleton variant="rounded" height={80} sx={{ mb: 3, borderRadius: 2 }} />
+      
+      <Box sx={{ mb: 2 }}>
+        <Skeleton variant="text" width={140} height={24} sx={{ mb: 2 }} />
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} variant="rounded" height={60} sx={{ mb: 1, borderRadius: 1 }} />
+        ))}
+      </Box>
+    </Box>
+  );
+
   if (!roomId) {
     return (
       <StyledContainer>
@@ -428,12 +448,12 @@ const EnhancedPWAView = () => {
     );
   }
 
-  if (loading) {
+  if (!room || loading) {
     return (
       <StyledContainer>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          <CircularProgress />
-        </Box>
+        <Header>
+          <LoadingSkeleton />
+        </Header>
       </StyledContainer>
     );
   }

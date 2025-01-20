@@ -14,13 +14,25 @@ export default defineConfig(({ command, mode }) => {
     build: {
       rollupOptions: {
         output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              return 'vendor';
-            }
+          manualChunks: {
+            'vendor-mui': ['@mui/material', '@mui/icons-material'],
+            'vendor-firebase': ['firebase/app', 'firebase/firestore'],
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           }
         }
+      },
+      chunkSizeWarningLimit: 1000,
+      sourcemap: false,
+      minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true
+        }
       }
+    },
+    optimizeDeps: {
+      include: ['@mui/material', '@mui/icons-material', 'firebase/app', 'firebase/firestore']
     }
   }
 })
