@@ -88,18 +88,6 @@ const RoomGrid = () => {
         >
           {room.occupantName || 'Tomt værelse'}
         </Typography>
-        {room.balance > 0 && (
-          <Typography 
-            variant="body1" 
-            sx={{ 
-              color: '#e74c3c',
-              mt: 1,
-              fontWeight: 'bold'
-            }}
-          >
-            {room.balance} kr
-          </Typography>
-        )}
       </Paper>
     );
   };
