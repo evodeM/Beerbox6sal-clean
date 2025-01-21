@@ -191,51 +191,40 @@ const EnhancedPWAView = () => {
           if (roomDoc.exists()) {
             const roomData = { id: roomDoc.id, ...roomDoc.data() };
 
-            // First get all purchases for the room
+            // Get recent purchases
             const purchasesRef = collection(db, 'purchases');
             const purchasesQuery = query(
-              purchasesRef, 
-              where('roomId', '==', roomId)
+              purchasesRef,
+              where('roomId', '==', roomId),
+              orderBy('timestamp', 'desc'),
+              limit(10)
             );
-            
-            try {
-              const snapshot = await getDocs(purchasesQuery);
-              const allPurchases = [];
-              
-              snapshot.forEach((doc) => {
-                const purchaseData = doc.data();
-                allPurchases.push({ 
-                  id: doc.id, 
-                  ...purchaseData,
-                  timestamp: purchaseData.timestamp
-                });
-              });
 
-              // Sort purchases by timestamp and take the latest 3
-              const recentPurchases = allPurchases
-                .sort((a, b) => b.timestamp?.seconds - a.timestamp?.seconds)
-                .slice(0, 3);
+            const purchasesSnapshot = await getDocs(purchasesQuery);
+            const recentPurchases = purchasesSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
 
-              const updatedRoomData = {
-                ...roomData,
-                recentPurchases
-              };
-
-              console.log('Updated room data:', updatedRoomData);
-              setRoom(updatedRoomData);
-            } catch (error) {
-              console.error('Error fetching purchases:', error);
-            }
+            setRoom({
+              ...roomData,
+              recentPurchases
+            });
+            setLoading(false);
+            setError(null);
+          } else {
+            console.log('Room not found, creating default data...');
+            await initializeDefaultData();
           }
         }, (error) => {
-          console.error('Room listener error:', error);
-          setError(error);
+          console.error('Error in room listener:', error);
+          setError('Der opstod en fejl ved indlæsning af data');
+          setLoading(false);
         });
 
       } catch (error) {
         console.error('Error setting up listener:', error);
-        setError(error);
-      } finally {
+        setError('Der opstod en fejl ved indlæsning af data');
         setLoading(false);
       }
     };
