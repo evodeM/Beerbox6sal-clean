@@ -1,9 +1,33 @@
 # Dorm Sales App - Project Status
 
 ## Current Version
-- **Tag**: v1.1-admin-panel
-- **Branch**: admin-panel-implementation
+- **Tag**: v1.2-stable
+- **Branch**: stable-version
 - **Deployment**: https://evodem.github.io/Beerbox6sal-clean/
+
+## Stable Features
+- Room grid with real-time balance updates
+- Room purchase functionality with instant updates
+- Admin panel with:
+  - Product management
+  - Recent purchases overview
+  - Sales statistics
+  - Settings management
+- Basic PWA view with:
+  - Room balance display
+  - Purchase history
+  - Real-time updates
+
+## Known Working Components
+- RoomGrid: Full functionality with real-time updates
+- RoomPurchase: Complete purchase flow with balance updates
+- AdminPanel: All features working including product management and statistics
+- Basic PWA: Core features working (balance, purchases)
+
+## Development Notes
+- Enhanced PWA features (notifications, etc.) are currently disabled for stability
+- All core features are thoroughly tested and working in production
+- Firebase real-time updates are properly implemented across all components
 
 ## Completed Features
 - PWA view with room grid
@@ -70,13 +94,6 @@
 - Refactor Firebase service functions
 - Improve state management
 - Add comprehensive error logging
-
-## Development Notes
-- Current focus: Stable, functional PWA
-- Next major version will introduce advanced admin features
-- Mobile view is now feature-complete and optimized
-- Focus can shift to admin features
-- Consider implementing user feedback system
 
 ## Deployment Strategy
 - Using GitHub Pages for hosting
