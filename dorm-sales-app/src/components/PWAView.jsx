@@ -5,20 +5,21 @@ import {
   Button,
   Typography,
   Container,
-  Paper
+  Paper,
+  CircularProgress
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { db } from '../firebase/config';
 import { 
   doc, 
-  getDoc,
   collection,
   query,
   orderBy,
   limit,
-  getDocs
+  getDocs,
+  onSnapshot,
+  where
 } from 'firebase/firestore';
-import { getRoom } from '../firebase/services';
 
 const StyledContainer = styled(Container)({
   minHeight: '100vh',
@@ -84,13 +85,8 @@ const SectionTitle = styled(Typography)({
 });
 
 const PWAView = () => {
-  const [room, setRoom] = useState({ 
-    occupantName: '', 
-    balance: 0,
-    lastPurchase: null,
-    recentPurchases: []
-  });
-  const [roomId, setRoomId] = useState(localStorage.getItem('selectedRoom'));
+  const [room, setRoom] = useState(null);
+  const [roomId, setRoomId] = useState(localStorage.getItem('selectedRoom') || '601');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -99,54 +95,72 @@ const PWAView = () => {
     const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
     return date.toLocaleString('da-DK', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit'
     });
   };
 
   useEffect(() => {
-    const loadData = async () => {
+    let unsubscribe = null;
+
+    const setupRealTimeListener = async () => {
       if (!roomId) return;
 
       try {
         setLoading(true);
-        console.log('Loading data for room:', roomId);
+        console.log('Setting up listener for room:', roomId);
 
-        const roomData = await getRoom(roomId);
-        console.log('Room data loaded:', roomData);
+        const roomRef = doc(db, 'rooms', roomId);
+        unsubscribe = onSnapshot(roomRef, async (roomDoc) => {
+          if (roomDoc.exists()) {
+            const roomData = { id: roomDoc.id, ...roomDoc.data() };
+            console.log('Room data received:', roomData);
 
-        // Fetch recent purchases directly from Firestore
-        const purchasesRef = collection(db, 'rooms', roomId, 'purchases');
-        const purchasesQuery = query(purchasesRef, orderBy('timestamp', 'desc'), limit(5));
-        
-        const snapshot = await getDocs(purchasesQuery);
-        const recentPurchases = [];
-        
-        snapshot.forEach((doc) => {
-          const purchaseData = doc.data();
-          recentPurchases.push({ 
-            id: doc.id, 
-            ...purchaseData,
-            timestamp: purchaseData.timestamp
-          });
+            const purchasesRef = collection(db, 'purchases');
+            const purchasesQuery = query(
+              purchasesRef,
+              where('roomId', '==', roomId),
+              orderBy('timestamp', 'desc'),
+              limit(10)
+            );
+
+            const purchasesSnapshot = await getDocs(purchasesQuery);
+            const recentPurchases = purchasesSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            console.log('Recent purchases:', recentPurchases);
+
+            setRoom({
+              ...roomData,
+              recentPurchases
+            });
+          } else {
+            console.log('Room not found:', roomId);
+            setError('Værelse ikke fundet');
+          }
+          setLoading(false);
+        }, (error) => {
+          console.error('Error in room listener:', error);
+          setError('Der opstod en fejl ved indlæsning af data');
+          setLoading(false);
         });
 
-        // Merge recent purchases with room data
-        const updatedRoomData = {
-          ...roomData,
-          recentPurchases
-        };
-
-        console.log('Updated room data:', updatedRoomData);
-        setRoom(updatedRoomData);
       } catch (error) {
-        console.error('Error loading data:', error);
-        setError(error);
-      } finally {
+        console.error('Error setting up listener:', error);
+        setError('Der opstod en fejl ved indlæsning af data');
         setLoading(false);
       }
     };
 
-    loadData();
+    setupRealTimeListener();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [roomId]);
 
   const handleRoomSelect = (event) => {
@@ -166,50 +180,25 @@ const PWAView = () => {
     }
   };
 
-  // Generate room numbers 601-628
   const roomNumbers = Array.from({ length: 28 }, (_, i) => String(601 + i));
 
-  if (!roomId) {
+  if (loading) {
     return (
       <StyledContainer>
-        <Box sx={{ textAlign: 'center', mt: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            Velkommen
-          </Typography>
-          <Typography gutterBottom sx={{ mb: 3, color: '#666666' }}>
-            Vælg dit værelse for at fortsætte
-          </Typography>
-          <TextField
-            select
-            fullWidth
-            label="Værelse"
-            onChange={handleRoomSelect}
-            SelectProps={{
-              native: true
-            }}
-            sx={{ 
-              backgroundColor: '#f0f0f0',
-              borderRadius: '8px',
-              '& .MuiInputBase-input': { color: '#333333' },
-              '& .MuiInputLabel-root': { color: '#666666' }
-            }}
-          >
-            <option value="">Vælg værelse</option>
-            {roomNumbers.map((num) => (
-              <option key={num} value={num}>{num}</option>
-            ))}
-          </TextField>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <CircularProgress />
         </Box>
       </StyledContainer>
     );
   }
 
-  if (loading) {
+  if (error) {
     return (
       <StyledContainer>
-        <Typography variant="body1" sx={{ textAlign: 'center', mt: 4 }}>
-          Indlæser...
-        </Typography>
+        <Typography color="error">{error}</Typography>
+        <Button onClick={() => window.location.reload()}>
+          Prøv igen
+        </Button>
       </StyledContainer>
     );
   }
@@ -217,13 +206,30 @@ const PWAView = () => {
   return (
     <StyledContainer>
       <Header>
-        <Typography variant="h6" sx={{ color: '#333333' }}>Værelse {roomId}</Typography>
+        <Typography variant="h6">
+          Værelse {roomId}
+        </Typography>
         <OccupantInput
           variant="standard"
           placeholder="Beboernavn"
           value={room?.occupantName || ''}
           disabled
         />
+        <TextField
+          select
+          value={roomId}
+          onChange={handleRoomSelect}
+          variant="standard"
+          SelectProps={{
+            native: true
+          }}
+        >
+          {roomNumbers.map((number) => (
+            <option key={number} value={number}>
+              {number}
+            </option>
+          ))}
+        </TextField>
       </Header>
 
       <Box sx={{ textAlign: 'center', my: 4 }}>
@@ -242,69 +248,23 @@ const PWAView = () => {
 
       <Section>
         <SectionTitle>Seneste 5 køb</SectionTitle>
-        {error && (
-          <Typography variant="body2" color="error">
-            Fejl ved hentning af køb: {error.message}
-          </Typography>
-        )}
-        {room.lastPurchase && (
-          <Box sx={{ 
-            mb: 2, 
-            pb: 2, 
-            borderBottom: '1px solid #e0e0e0'
-          }}>
-            <Typography variant="body2" sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between',
-              color: '#333333'
-            }}>
-              <span>Seneste køb: {room.lastPurchase.productName}</span>
-              <span>Pris: {room.lastPurchase.amount} kr</span>
-            </Typography>
-            {room.lastPurchase.timestamp && (
-              <Typography variant="caption" sx={{ 
-                display: 'block', 
-                mt: 0.5, 
-                color: '#666666' 
-              }}>
-                {formatTimestamp(room.lastPurchase.timestamp)}
-              </Typography>
-            )}
-          </Box>
-        )}
-
-        {room.recentPurchases && room.recentPurchases.length > 0 && (
+        {room?.recentPurchases?.length > 0 ? (
           room.recentPurchases.map((purchase) => (
-            <Box key={purchase.id} sx={{ 
-              mb: 2, 
-              pb: 2, 
-              borderBottom: '1px solid #e0e0e0',
-              '&:last-child': { borderBottom: 'none' }
-            }}>
-              <Typography variant="body2" sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between',
-                color: '#333333'
-              }}>
+            <Box key={purchase.id} sx={{ mb: 2, pb: 2, borderBottom: '1px solid #e0e0e0' }}>
+              <Typography variant="body2" sx={{ display: 'flex', justifyContent: 'space-between', color: '#333333' }}>
                 <span>Produkt: {purchase.productName}</span>
                 <span>Pris: {purchase.amount} kr</span>
               </Typography>
               {purchase.timestamp && (
-                <Typography variant="caption" sx={{ 
-                  display: 'block', 
-                  mt: 0.5, 
-                  color: '#666666' 
-                }}>
+                <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: '#666666' }}>
                   {formatTimestamp(purchase.timestamp)}
                 </Typography>
               )}
             </Box>
           ))
-        )}
-
-        {!room.lastPurchase && (!room.recentPurchases || room.recentPurchases.length === 0) && (
+        ) : (
           <Typography variant="body2" sx={{ color: '#666666' }}>
-            Ingen seneste køb
+            Ingen køb endnu
           </Typography>
         )}
       </Section>
