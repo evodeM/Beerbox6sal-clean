@@ -52,7 +52,6 @@ const EnhancedPWAView = () => {
   const [roomId, setRoomId] = useState(localStorage.getItem('selectedRoom') || '601');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });
 
   // Generate room numbers 601-628
   const roomNumbers = Array.from({ length: 28 }, (_, i) => String(601 + i));
@@ -144,11 +143,32 @@ const EnhancedPWAView = () => {
     setTimeout(() => setLoading(false), 1000);
   };
 
+  if (loading) {
+    return (
+      <StyledContainer>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <CircularProgress />
+        </Box>
+      </StyledContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <StyledContainer>
+        <Typography color="error">{error}</Typography>
+        <Button onClick={() => window.location.reload()}>
+          Prøv igen
+        </Button>
+      </StyledContainer>
+    );
+  }
+
   return (
     <StyledContainer>
       <Header>
         <Box sx={{ position: 'absolute', right: '16px', top: '16px' }}>
-          <IconButton onClick={handleRefresh} disabled={loading}>
+          <IconButton onClick={handleRefresh}>
             <RefreshIcon />
           </IconButton>
         </Box>
@@ -185,13 +205,7 @@ const EnhancedPWAView = () => {
           <Typography variant="h6" gutterBottom>
             Seneste køb
           </Typography>
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-              <CircularProgress />
-            </Box>
-          ) : error ? (
-            <Typography color="error">{error}</Typography>
-          ) : room?.recentPurchases?.length > 0 ? (
+          {room?.recentPurchases?.length > 0 ? (
             room.recentPurchases.map((purchase) => (
               <Box key={purchase.id} sx={{ mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">
@@ -206,16 +220,6 @@ const EnhancedPWAView = () => {
           )}
         </Paper>
       </Container>
-
-      <Snackbar
-        open={notification.open}
-        autoHideDuration={6000}
-        onClose={() => setNotification({ ...notification, open: false })}
-      >
-        <Alert severity={notification.severity} sx={{ width: '100%' }}>
-          {notification.message}
-        </Alert>
-      </Snackbar>
     </StyledContainer>
   );
 };
