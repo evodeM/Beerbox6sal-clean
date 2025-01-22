@@ -4,6 +4,7 @@ import TabletLayout from './components/tablet/TabletLayout';
 import RoomGrid from './components/tablet/RoomGrid';
 import RoomPurchase from './components/tablet/RoomPurchase';
 import PWAView from './components/PWAView';
+import AdminPanel from './components/admin/AdminPanel';
 import './App.css'
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
         <Route path="/" element={<TabletLayout />}>
           <Route index element={<RoomGrid />} />
           <Route path="room/:roomId" element={<RoomPurchase />} />
+          <Route path="admin" element={<AdminPanel />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
