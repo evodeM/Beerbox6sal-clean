@@ -102,73 +102,93 @@ const RoomGrid = () => {
     <Container 
       maxWidth={false} 
       sx={{ 
-        py: 3,
-        px: { xs: 2, sm: 3 },
-        minHeight: '100vh',
+        py: 2,
+        px: { xs: 1, sm: 2 },
+        height: '100vh',
         bgcolor: '#f5f6fa',
         position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
         overflow: 'hidden'
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography 
-          variant="h3" 
-          component="h1" 
-          align="center" 
-          sx={{ 
-            color: '#2c3e50',
-            mb: 1,
-            fontWeight: 'bold'
-          }}
-        >
-          DormDrinks 6.sal
-        </Typography>
+      <Box sx={{ 
+        position: 'relative',
+        textAlign: 'center',
+        mb: 1
+      }}>
         <Button
           variant="contained"
           color="primary"
           startIcon={<SettingsIcon />}
           onClick={handleAdminClick}
+          sx={{
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            minWidth: '100px',
+            height: '36px'
+          }}
         >
           Admin
         </Button>
-      </Box>
+        
+        <Typography 
+          variant="h3" 
+          component="h1" 
+          sx={{ 
+            color: '#2c3e50',
+            fontWeight: 'bold',
+            fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+            pt: 1
+          }}
+        >
+          DormDrinks 6.sal
+        </Typography>
 
-      <Typography 
-        variant="subtitle1" 
-        component="div" 
-        align="center"
-        sx={{ 
-          color: '#666',
-          mb: 4
-        }}
-      >
-        Beer, Soda & Beyond
-      </Typography>
+        <Typography 
+          variant="subtitle1" 
+          component="div" 
+          sx={{ 
+            color: '#666',
+            fontSize: { xs: '0.9rem', sm: '1rem' },
+            mt: 1
+          }}
+        >
+          Beer, Soda & Beyond
+        </Typography>
+      </Box>
       
-      <Grid 
-        container 
-        spacing={2}
-        sx={{
-          width: 'auto',
-          mx: -1,
-          mt: 0
-        }}
-      >
-        {Array.from({ length: 28 }, (_, i) => i + 601).map((roomId) => (
-          <Grid 
-            item 
-            xs={6}
-            sm={4}
-            md={3}
-            key={roomId}
-            sx={{
-              height: '100%'
-            }}
-          >
-            <RoomTile roomId={roomId.toString()} />
-          </Grid>
-        ))}
-      </Grid>
+      <Box sx={{ 
+        flex: 1,
+        overflow: 'auto',
+        mt: 2
+      }}>
+        <Grid 
+          container 
+          spacing={1.5}
+          sx={{
+            width: '100%',
+            m: 0,
+            p: 1
+          }}
+        >
+          {Array.from({ length: 28 }, (_, i) => i + 601).map((roomId) => (
+            <Grid 
+              item 
+              xs={6}
+              sm={4}
+              md={3}
+              key={roomId}
+              sx={{
+                height: '100%'
+              }}
+            >
+              <RoomTile roomId={roomId.toString()} />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
     </Container>
   );
 };
