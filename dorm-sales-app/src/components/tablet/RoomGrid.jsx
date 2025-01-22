@@ -102,9 +102,10 @@ const RoomGrid = () => {
     <Container 
       maxWidth={false} 
       sx={{ 
-        py: 2,
+        py: 1,
         px: { xs: 1, sm: 2 },
-        height: '100vh',
+        minHeight: '100vh',
+        maxHeight: '100vh',
         bgcolor: '#f5f6fa',
         position: 'relative',
         display: 'flex',
@@ -113,26 +114,37 @@ const RoomGrid = () => {
       }}
     >
       <Box sx={{ 
-        position: 'relative',
-        textAlign: 'center',
-        mb: 1
+        position: 'sticky',
+        top: 0,
+        zIndex: 1,
+        backgroundColor: '#f5f6fa',
+        pb: 1,
+        pt: 1,
+        px: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
       }}>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<SettingsIcon />}
-          onClick={handleAdminClick}
-          sx={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            minWidth: '100px',
-            height: '36px'
-          }}
-        >
-          Admin
-        </Button>
-        
+        <Box sx={{ 
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          mb: 1
+        }}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<SettingsIcon />}
+            onClick={handleAdminClick}
+            sx={{
+              minWidth: '100px',
+              height: '36px'
+            }}
+          >
+            Admin
+          </Button>
+        </Box>
+
         <Typography 
           variant="h3" 
           component="h1" 
@@ -140,7 +152,8 @@ const RoomGrid = () => {
             color: '#2c3e50',
             fontWeight: 'bold',
             fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-            pt: 1
+            textAlign: 'center',
+            width: '100%'
           }}
         >
           DormDrinks 6.sal
@@ -152,7 +165,9 @@ const RoomGrid = () => {
           sx={{ 
             color: '#666',
             fontSize: { xs: '0.9rem', sm: '1rem' },
-            mt: 1
+            mt: 1,
+            textAlign: 'center',
+            width: '100%'
           }}
         >
           Beer, Soda & Beyond
@@ -162,7 +177,7 @@ const RoomGrid = () => {
       <Box sx={{ 
         flex: 1,
         overflow: 'auto',
-        mt: 2
+        mt: 1
       }}>
         <Grid 
           container 
