@@ -102,71 +102,84 @@ const RoomGrid = () => {
     <Container 
       maxWidth={false} 
       sx={{ 
-        py: 3,
+        py: { xs: 1, sm: 3 }, 
         px: { xs: 2, sm: 3 },
         minHeight: '100vh',
         bgcolor: '#f5f6fa',
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
       }}
     >
       <Box sx={{ 
         display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        textAlign: 'center',
-        width: '100%',
-        mb: 2,
-        mt: { xs: -2, sm: 0 } 
-      }}>
-        <Typography 
-          variant="h3" 
-          component="h1" 
-          sx={{ 
-            color: '#2c3e50',
-            mb: 0.5, 
-            fontWeight: 'bold',
-            width: '100%'
-          }}
-        >
-          DormDrinks 6.sal
-        </Typography>
-        <Typography 
-          variant="subtitle1" 
-          component="div" 
-          sx={{ 
-            color: '#666'
-          }}
-        >
-          Beer, Soda & Beyond
-        </Typography>
-      </Box>
-
-      <Box sx={{ 
-        display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        mb: 4 
+        mb: { xs: 1, sm: 4 },
+        mt: { xs: 0, sm: 2 } 
       }}>
-        <div /> {/* Placeholder to balance the admin button */}
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<SettingsIcon />}
-          onClick={handleAdminClick}
-        >
-          Admin
-        </Button>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          textAlign: 'center',
+          width: '100%',
+          position: 'relative'
+        }}>
+          <Typography 
+            variant="h4" 
+            component="h1" 
+            sx={{ 
+              color: '#2c3e50',
+              mb: 0.5,
+              fontWeight: 'bold',
+              width: '100%',
+              fontSize: { xs: '1.5rem', sm: '2rem' } 
+            }}
+          >
+            DormDrinks 6.sal
+          </Typography>
+          <Typography 
+            variant="subtitle1" 
+            component="div" 
+            sx={{ 
+              color: '#666',
+              fontSize: { xs: '0.875rem', sm: '1rem' } 
+            }}
+          >
+            Beer, Soda & Beyond
+          </Typography>
+        </Box>
+        
+        <Box sx={{ 
+          position: 'absolute', 
+          top: { xs: -40, sm: 0 }, 
+          right: 0 
+        }}>
+          <Button
+            variant="contained"
+            color="primary"
+            size="small" 
+            startIcon={<SettingsIcon />}
+            onClick={handleAdminClick}
+            sx={{ 
+              minWidth: { xs: 'auto', sm: '100px' },
+              px: { xs: 1, sm: 2 }
+            }}
+          >
+            Admin
+          </Button>
+        </Box>
       </Box>
 
       <Grid 
         container 
         spacing={2}
         sx={{
-          width: 'auto',
-          mx: -1,
-          mt: 0
+          flexGrow: 1,
+          overflow: 'auto'
         }}
       >
         {Array.from({ length: 28 }, (_, i) => i + 601).map((roomId) => (
