@@ -117,7 +117,8 @@ const RoomGrid = () => {
         justifyContent: 'space-between', 
         alignItems: 'center', 
         mb: { xs: 1, sm: 4 },
-        mt: { xs: 0, sm: 2 } 
+        mt: { xs: 0, sm: 2 },
+        position: 'relative'
       }}>
         <Box sx={{ 
           display: 'flex', 
@@ -155,8 +156,9 @@ const RoomGrid = () => {
         
         <Box sx={{ 
           position: 'absolute', 
-          top: { xs: -40, sm: 0 }, 
-          right: 0 
+          top: '50%', 
+          right: 0,
+          transform: 'translateY(-50%)'
         }}>
           <Button
             variant="contained"
