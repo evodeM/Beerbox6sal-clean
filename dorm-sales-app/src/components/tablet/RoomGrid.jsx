@@ -111,20 +111,37 @@ const RoomGrid = () => {
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography 
-          variant="h3" 
-          component="h1" 
-          align="center" 
-          sx={{ 
-            color: '#2c3e50',
-            mb: 1,
-            fontWeight: 'bold',
-            width: '100%',
-            textAlign: 'center'
-          }}
-        >
-          DormDrinks 6.sal
-        </Typography>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          mb: 2,
+          mt: { xs: -2, sm: 0 } 
+        }}>
+          <Typography 
+            variant="h3" 
+            component="h1" 
+            sx={{ 
+              color: '#2c3e50',
+              mb: 0.5, 
+              fontWeight: 'bold',
+              width: '100%',
+              textAlign: 'center'
+            }}
+          >
+            DormDrinks 6.sal
+          </Typography>
+          <Typography 
+            variant="subtitle1" 
+            component="div" 
+            sx={{ 
+              color: '#666',
+              textAlign: 'center'
+            }}
+          >
+            Beer, Soda & Beyond
+          </Typography>
+        </Box>
         <Button
           variant="contained"
           color="primary"
@@ -135,18 +152,6 @@ const RoomGrid = () => {
         </Button>
       </Box>
 
-      <Typography 
-        variant="subtitle1" 
-        component="div" 
-        align="center"
-        sx={{ 
-          color: '#666',
-          mb: 4
-        }}
-      >
-        Beer, Soda & Beyond
-      </Typography>
-      
       <Grid 
         container 
         spacing={2}
