@@ -118,7 +118,9 @@ const RoomGrid = () => {
           sx={{ 
             color: '#2c3e50',
             mb: 1,
-            fontWeight: 'bold'
+            fontWeight: 'bold',
+            width: '100%',
+            textAlign: 'center'
           }}
         >
           DormDrinks 6.sal
