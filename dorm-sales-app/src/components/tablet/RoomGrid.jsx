@@ -110,38 +110,46 @@ const RoomGrid = () => {
         overflow: 'hidden'
       }}
     >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          mb: 2,
-          mt: { xs: -2, sm: 0 } 
-        }}>
-          <Typography 
-            variant="h3" 
-            component="h1" 
-            sx={{ 
-              color: '#2c3e50',
-              mb: 0.5, 
-              fontWeight: 'bold',
-              width: '100%',
-              textAlign: 'center'
-            }}
-          >
-            DormDrinks 6.sal
-          </Typography>
-          <Typography 
-            variant="subtitle1" 
-            component="div" 
-            sx={{ 
-              color: '#666',
-              textAlign: 'center'
-            }}
-          >
-            Beer, Soda & Beyond
-          </Typography>
-        </Box>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        textAlign: 'center',
+        width: '100%',
+        mb: 2,
+        mt: { xs: -2, sm: 0 } 
+      }}>
+        <Typography 
+          variant="h3" 
+          component="h1" 
+          sx={{ 
+            color: '#2c3e50',
+            mb: 0.5, 
+            fontWeight: 'bold',
+            width: '100%'
+          }}
+        >
+          DormDrinks 6.sal
+        </Typography>
+        <Typography 
+          variant="subtitle1" 
+          component="div" 
+          sx={{ 
+            color: '#666'
+          }}
+        >
+          Beer, Soda & Beyond
+        </Typography>
+      </Box>
+
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        mb: 4 
+      }}>
+        <div /> {/* Placeholder to balance the admin button */}
         <Button
           variant="contained"
           color="primary"
